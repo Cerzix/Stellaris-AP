@@ -37,6 +37,24 @@ MIN_ZOOM, MAX_ZOOM = 0.2, 2.0
 # Below this zoom the names are too small to read and are left out
 TEXT_ZOOM = 0.45
 
+# The legend at the side: how a box looks, and what that means
+LEGEND = (
+    ("checked", "Checked: you sent what it held"),
+    ("available", "Can come up as research now"),
+    ("locked", "Locked: its tier is not open yet"),
+    ("base", "Base technology, not randomized"),
+    ("progression", "Stripe: holds progression"),
+    ("useful", "Stripe: holds something useful"),
+    ("filler", "Stripe: holds filler"),
+    ("received", "Dot: you received this technology"),
+    ("stellaris", "Holds a technology of Stellaris"),
+    ("foreign", "Holds something else, or of another game"),
+    ("match", "Found by the search"),
+    ("pinned", "Clicked, to keep it shown"),
+)
+LEGEND_ROW = 23
+# The technology whose icon stands for all of them in the legend
+LEGEND_TECHNOLOGY = "tech_lasers_1"
 # What a location is called while it is not known what it holds
 UNKNOWN_ITEM = "Archipelago Item"
 # The icon of everything that is not a technology of Stellaris
@@ -484,9 +502,14 @@ class TrackerWindow:
 
         self.body = tkinter.Frame(self.window)
         self.body.pack(fill="both", expand=True)
-        self.info = tkinter.Text(self.body, width=38, wrap="word", font=("Segoe UI", 10), borderwidth=0,
+        self.side = tkinter.Frame(self.body)
+        self.side.pack(side="right", fill="y")
+        # What the borders, stripes, dots and icons mean: always in view, below what is shown of a node
+        self.legend = tkinter.Canvas(self.side, highlightthickness=0, height=LEGEND_ROW * (len(LEGEND) + 1) + 26)
+        self.legend.pack(side="bottom", fill="x")
+        self.info = tkinter.Text(self.side, width=38, wrap="word", font=("Segoe UI", 10), borderwidth=0,
                                  padx=14, pady=12, state="disabled", cursor="arrow")
-        self.info.pack(side="right", fill="y")
+        self.info.pack(side="top", fill="both", expand=True)
         self.canvas = tkinter.Canvas(self.body, highlightthickness=0)
         self.canvas.pack(side="left", fill="both", expand=True)
         self.canvas.bind("<ButtonPress-1>", self.press)
@@ -525,8 +548,44 @@ class TrackerWindow:
         self.info.tag_configure("player", foreground=self.colour("received"))
         self.canvas.configure(background=self.colour("background"))
         self.colour_chips()
+        self.draw_legend()
         self.draw()
         self.show(self.shown)
+
+    def draw_legend(self) -> None:
+        """Draws a small box for everything a box of the tree can look like, with what it means."""
+        legend = self.legend
+        legend.delete("all")
+        self.legend_pictures = []
+        legend.configure(background=self.colour("panel"))
+        self.side.configure(background=self.colour("panel"))
+        legend.create_line(14, 6, 600, 6, fill=self.colour("locked"))
+        legend.create_text(14, 22, text="Legend", anchor="w", fill=self.colour("text"), font=("Segoe UI", 10, "bold"))
+        width, height = 46, 18
+        for row, (look, text) in enumerate(LEGEND):
+            x, y = 14, 38 + row * LEGEND_ROW
+            fill, border, thick = self.colour("node"), self.colour("locked"), 1
+            if look in ("checked", "available", "match"):
+                border, thick = self.colour(look), 2
+                fill = self.colour("checked_fill") if look == "checked" else fill
+            elif look == "pinned":
+                border, thick = self.colour("text"), 2
+            elif look == "base":
+                fill, border = self.colour("base_fill"), self.colour("base_border")
+            legend.create_rectangle(x, y, x + width, y + height, fill=fill, outline=border, width=thick)
+            if look in ("progression", "useful", "filler"):
+                legend.create_rectangle(x, y, x + 5, y + height, fill=self.colour(look), width=0)
+            elif look == "received":
+                legend.create_oval(x + width - 13, y + 5, x + width - 5, y + 13, fill=self.colour("received"), outline="")
+            elif look in ("stellaris", "foreign"):
+                name = LEGEND_TECHNOLOGY if look == "stellaris" else ARCHIPELAGO_ICON
+                picture = self.icons.get(name, height - 2, fill, False)
+                if picture:
+                    # Kept here: the icons of another size than the tree's are not kept anywhere else
+                    self.legend_pictures.append(picture)
+                    legend.create_image(x + 5, y + height / 2, anchor="w", image=picture)
+            legend.create_text(x + width + 10, y + height / 2, text=text, anchor="w", fill=self.colour("text"),
+                               font=("Segoe UI", 9))
 
     def colour_chips(self) -> None:
         bar = self.colour("bar")
@@ -687,11 +746,8 @@ class TrackerWindow:
             self.info.insert("end", "\nMove the mouse over a technology to see what it holds, and click it to keep "
                                     "it shown.\n\nA line leads from a technology to the ones that follow it in the "
                                     "game. In this run a technology is a location: researching it sends what it "
-                                    "holds, and the technology itself arrives as an item.\n\nThe border tells "
-                                    "whether a location is checked, can come up as research right now, or is "
-                                    "still locked behind its tier. The stripe on the left tells what it holds, "
-                                    "and a dot on the right that the technology itself was received.\n\n"
-                                    "Type in Find to light up what matches, and press Enter to go from one to "
+                                    "holds, and the technology itself arrives as an item. A box is called "
+                                    "after what it holds.\n\nType in Find to light up what matches, and press Enter to go from one to "
                                     "the next. Click a heading to fold its part of the tree away, and one of "
                                     "the kinds at the top to show only those.\n\nDrag to move, use the wheel to "
                                     "zoom, double click to zoom in on a technology, and press Esc to clear "

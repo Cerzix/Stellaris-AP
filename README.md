@@ -5,6 +5,16 @@ traditions and ascension perk slots of the game are shuffled into the multiworld
 
 Windows and single player only. Made for Stellaris 4.5 and Archipelago 0.6.7 or newer.
 
+## Made with AI
+
+This project was written by an AI: Claude, by Anthropic, working in Claude Code. That covers the mod,
+the client, the Archipelago world, the tests and this text. A human (Cerzix) gave the direction,
+decided what it should do, and tested it in the game.
+
+Treat it accordingly: it is tested, but young, and parts of it reach deep into a running game. The
+client reads and writes the memory of Stellaris to deliver items, which nothing in the game is meant
+for. Report what breaks.
+
 ## Installing
 
 You need [Python](https://www.python.org/downloads/) 3.10 or newer (tick "Add python.exe to PATH" in

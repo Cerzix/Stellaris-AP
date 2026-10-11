@@ -363,6 +363,25 @@ class WindowTest(unittest.TestCase):
         view.apply_theme()
         self.assertEqual(self.item("tech_cruisers", "box", "outline"), "#abcdef")
 
+    def test_the_legend_explains_every_look(self):
+        view = self.view
+        texts = [view.legend.itemcget(item, "text") for item in view.legend.find_all()
+                 if view.legend.type(item) == "text"]
+        self.assertEqual(texts[0], "Legend")
+        self.assertEqual(texts[1:], [text for _, text in tracker.LEGEND])
+        looks = [look for look, _ in tracker.LEGEND]
+        for look in ("checked", "available", "locked", "base", "progression", "useful", "filler", "received",
+                     "stellaris", "foreign", "match", "pinned"):
+            self.assertIn(look, looks)
+        colours = {view.legend.itemcget(item, "outline") for item in view.legend.find_all()
+                   if view.legend.type(item) == "rectangle"}
+        for name in ("checked", "available", "locked", "match"):
+            self.assertIn(self.settings.colour(name), colours)
+        # It follows the theme
+        view.toggle_theme()
+        self.assertEqual(view.legend.cget("background"), THEMES["light"]["panel"])
+        self.assertIn(tracker.LEGEND_TECHNOLOGY, {technology["icon"] for technology in data.technologies()})
+
     def test_zoom_and_fit(self):
         view = self.view
         zoom = view.zoom
