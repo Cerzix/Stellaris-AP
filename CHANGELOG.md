@@ -25,8 +25,9 @@ The first release: Stellaris in an Archipelago multiworld.
 - A tracker: the technology tree of the game with what every technology holds, what is checked,
   what can come up as research right now and what you have received. It shows the icons of the
   technologies, can be moved, zoomed, searched as you type and filtered by kind, its parts fold
-  away, and it counts the locations done. It has a dark and a light theme, and its colours can be
-  changed.
+  away, and it counts the locations done. It has a dark and a light theme, its colours can be
+  changed, and a legend explains what its boxes mean. What a location holds stays hidden until it
+  is checked, unless spoilers are turned on.
 - Items arrive in the running game in the background, with a message that says who sent them.
 - A save belongs to the multiworld slot it was started under. Loaded with another one connected, it
   sends and receives nothing.

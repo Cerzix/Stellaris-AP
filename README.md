@@ -45,7 +45,8 @@ its installer) and the zip of a [release](../../releases).
    checked, what can come up as research right now and what you have received. Drag to move, use
    the wheel to zoom, click a technology to keep it shown, and type in Find to light up what
    matches. The kinds at the top filter the tree, a click on a heading folds its part away, and the
-   sun switches between the dark and the light theme.
+   sun switches between the dark and the light theme. What a location holds is hidden until you
+   have checked it, unless you turn on "Spoilers".
 6. If you lose, start a new game while connected to the same slot: it starts with everything the
    multiworld has given you so far.
 

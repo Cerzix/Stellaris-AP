@@ -229,8 +229,12 @@ class SettingsTest(unittest.TestCase):
             settings.collapsed.append("society")
             settings.zoom = 1.5
             settings.save()
+            self.assertFalse(settings.spoilers, "hidden unless the player asks")
+            settings.spoilers = True
+            settings.save()
             again = Settings(path)
-            self.assertEqual((again.theme, again.zoom, again.collapsed), ("light", 1.5, ["society"]))
+            self.assertEqual((again.theme, again.zoom, again.collapsed, again.spoilers),
+                             ("light", 1.5, ["society"], True))
             again.toggle_theme()
             self.assertEqual(again.colour("checked"), "#123456")
             again.reset_colours()
@@ -362,6 +366,33 @@ class WindowTest(unittest.TestCase):
         self.settings.set_colour("locked", "#abcdef")
         view.apply_theme()
         self.assertEqual(self.item("tech_cruisers", "box", "outline"), "#abcdef")
+
+    def test_spoilers_are_off_until_asked_for(self):
+        view = self.view
+        destroyers, cruisers = view.tree.nodes["tech_destroyers"], view.tree.nodes["tech_cruisers"]
+        self.state.checked.add(destroyers.location)
+        self.state.holds[destroyers.location] = ("Ender Pearl", "Steve", "progression", None)
+        self.state.holds[cruisers.location] = ("Blue Lasers", "Cerzix", "useful", "tech_lasers_2")
+        self.assertFalse(self.settings.spoilers)
+        self.assertIn("off", view.spoiler_button.cget("text"))
+        view.refresh()
+        self.assertEqual(self.item("tech_destroyers", "text", "text"), "Ender Pearl", "checked: it is known")
+        self.assertEqual(self.item("tech_cruisers", "text", "text"), "Archipelago Item")
+        self.assertEqual(self.item("tech_cruisers", "stripe", "state"), "hidden")
+        view.search.insert(0, "blue lasers")
+        view.search_changed()
+        self.assertNotIn("tech_cruisers", view.found, "the search does not give it away")
+        view.pin("tech_cruisers")
+        self.assertIn("What it holds is hidden", view.info.get("1.0", "end"))
+        view.clear()
+
+        view.toggle_spoilers()
+        self.assertTrue(self.settings.spoilers)
+        self.assertIn("on", view.spoiler_button.cget("text"))
+        self.assertEqual(self.item("tech_cruisers", "text", "text"), "Blue Lasers")
+        self.assertEqual(self.item("tech_cruisers", "stripe", "fill"), self.settings.colour("useful"))
+        view.toggle_spoilers()
+        self.assertEqual(self.item("tech_cruisers", "text", "text"), "Archipelago Item")
 
     def test_the_legend_explains_every_look(self):
         view = self.view

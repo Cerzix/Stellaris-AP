@@ -118,10 +118,18 @@ class TrackerState:
     perk_slots: int = 0
     # How far the goal is, in words
     goal: str = ""
+    # Whether what the locations hold was left out until they are checked
+    hidden: bool = False
 
     def same(self, other: "TrackerState") -> bool:
         return (self.checked, self.holds, self.received, self.perk_slots, self.goal) == (
             other.checked, other.holds, other.received, other.perk_slots, other.goal)
+
+    def without_spoilers(self) -> "TrackerState":
+        """The same run, knowing only what the locations that are checked held."""
+        return TrackerState(set(self.checked), {location: entry for location, entry in self.holds.items()
+                                                if location in self.checked},
+                            set(self.received), self.perk_slots, self.goal, hidden=True)
 
     def copy(self) -> "TrackerState":
         return TrackerState(set(self.checked), dict(self.holds), set(self.received), self.perk_slots, self.goal)
@@ -354,7 +362,8 @@ def describe(node: Node, state: TrackerState, counts: dict, names: dict[str, str
             item, player, kind, _ = held(state, node.location)
             parts += [("Holds ", "dim"), (item, kind), (" for ", "dim"), (player + "\n", "player")]
         else:
-            parts.append(("What it holds is not known yet.\n", "dim"))
+            parts.append(("What it holds is hidden. Spoilers at the top shows it.\n" if state.hidden
+                          else "What it holds is not known yet.\n", "dim"))
     if node.item is not None:
         got = node.item in state.received
         parts.append(("\nThe technology itself: ", "dim"))
@@ -473,12 +482,15 @@ class TrackerWindow:
         self.summary.pack(side="left")
         self.buttons = []
         for text, command in (("☀", self.toggle_theme), ("Colours", self.pick_colours),
+                              ("", self.toggle_spoilers),
                               ("+", lambda: self.zoom_by(1.25)), ("−", lambda: self.zoom_by(0.8)),
                               ("Fit", self.fit)):
             button = tkinter.Button(self.bar, text=text, command=command, relief="flat", padx=8, pady=1,
                                     borderwidth=0, cursor="hand2")
             button.pack(side="right", padx=2)
             self.buttons.append(button)
+        self.spoiler_button = self.buttons[2]
+        self.label_spoilers()
 
         self.chips = tkinter.Frame(self.window, padx=10, pady=4)
         self.chips.pack(fill="x")
@@ -594,6 +606,18 @@ class TrackerWindow:
             mark.configure(background=bar, foreground=self.colour(FILTER_COLOUR.get(name, name)))
             label.configure(background=bar, foreground=self.colour("text" if active or not self.filter else "dim"),
                             font=("Segoe UI", 9, "bold underline" if active else "normal"))
+
+    def label_spoilers(self) -> None:
+        self.spoiler_button.configure(text="Spoilers: on" if self.settings.spoilers else "Spoilers: off")
+
+    def toggle_spoilers(self) -> None:
+        """Shows what every location holds, or only what the checked ones held."""
+        self.settings.spoilers = not self.settings.spoilers
+        self.settings.save()
+        self.label_spoilers()
+        if self.timer:
+            self.window.after_cancel(self.timer)
+        self.refresh()
 
     def toggle_theme(self) -> None:
         self.settings.toggle_theme()
@@ -747,7 +771,8 @@ class TrackerWindow:
                                     "it shown.\n\nA line leads from a technology to the ones that follow it in the "
                                     "game. In this run a technology is a location: researching it sends what it "
                                     "holds, and the technology itself arrives as an item. A box is called "
-                                    "after what it holds.\n\nType in Find to light up what matches, and press Enter to go from one to "
+                                    "after what it held once it is checked. Spoilers at the top shows what "
+                                    "every box holds before that.\n\nType in Find to light up what matches, and press Enter to go from one to "
                                     "the next. Click a heading to fold its part of the tree away, and one of "
                                     "the kinds at the top to show only those.\n\nDrag to move, use the wheel to "
                                     "zoom, double click to zoom in on a technology, and press Esc to clear "
@@ -764,8 +789,12 @@ class TrackerWindow:
             return
         try:
             state = self.state_of_run()
-            if not state.same(self.state):
+            if not self.settings.spoilers:
+                state = state.without_spoilers()
+            if not state.same(self.state) or state.hidden != self.state.hidden:
+                hidden = state.hidden
                 self.state = state.copy()
+                self.state.hidden = hidden
                 self.counts = researched(self.technologies, self.state)
                 self.found = matches(self.tree, self.state, self.search.get())
                 self.paint()

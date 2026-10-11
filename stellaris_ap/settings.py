@@ -58,13 +58,16 @@ class Settings:
         collapsed = saved.get("collapsed")
         self.collapsed: list[str] = ([band for band in collapsed if isinstance(band, str)]
                                      if isinstance(collapsed, list) else [])
+        # Whether the tracker shows what a location holds before it is checked. Not unless the player asks
+        self.spoilers: bool = saved.get("spoilers") is True
 
     def save(self) -> None:
         """Keeps the settings. They are only a convenience: if they cannot be written, they are not kept."""
         if self.path:
             try:
                 self.path.write_text(json.dumps({"theme": self.theme, "colours": self.colours, "zoom": self.zoom,
-                                                 "collapsed": self.collapsed}, indent="	"), encoding="utf-8")
+                                                 "collapsed": self.collapsed, "spoilers": self.spoilers},
+                                                indent="	"), encoding="utf-8")
             except OSError:
                 pass
 
