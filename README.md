@@ -1,7 +1,56 @@
 # Stellaris Archipelago
 
-An [Archipelago](https://archipelago.gg) multiworld integration for Stellaris. Work in progress:
-so far this is the bridge prototype between the game and a client, without a server connection.
+An [Archipelago](https://archipelago.gg) multiworld integration for Stellaris: the technologies,
+traditions and ascension perk slots of the game are shuffled into the multiworld.
+
+Windows and single player only. Made for Stellaris 4.5 and Archipelago 0.6.7 or newer.
+
+## Made with AI
+
+This project was written by an AI: Claude, by Anthropic, working in Claude Code. That covers the mod,
+the client, the Archipelago world, the tests and this text. A human (Cerzix) gave the direction,
+decided what it should do, and tested it in the game.
+
+Treat it accordingly: it is tested, but young, and parts of it reach deep into a running game. The
+client reads and writes the memory of Stellaris to deliver items, which nothing in the game is meant
+for. Report what breaks.
+
+## Installing
+
+You need [Python](https://www.python.org/downloads/) 3.10 or newer (tick "Add python.exe to PATH" in
+its installer) and the zip of a [release](../../releases).
+
+1. Unpack the zip anywhere, and keep the folder: the game loads the mod from it.
+2. Copy `stellaris.apworld` into the `custom_worlds` folder of Archipelago, and make your YAML with
+   Archipelago's Options Creator. Generate and host the multiworld as for any other game.
+3. Double click `Play Stellaris Archipelago.bat`. The first time it installs what it needs by itself,
+   and registers the mod with the Stellaris launcher.
+4. In the Stellaris launcher, add the mod "Archipelago" to your playset and enable it. This is needed
+   once.
+
+## Playing
+
+1. Double click `Play Stellaris Archipelago.bat`. In the window that opens, enter the address of the
+   server, the name of your slot and its password, and press Connect. The client names the
+   technologies and traditions in game after what they send; then "Start Stellaris" starts the game.
+   Connect before starting the game: it reads those names once, at its start.
+2. Start a new game. It belongs to the multiworld slot it was started under, and its saves keep
+   that: with another multiworld connected, a save sends and receives nothing, and says so in game.
+3. Research the "Archipelago: ..." technologies and adopt traditions to send checks. What you receive
+   arrives with a message in game, while the game is not paused.
+4. The window stays open while you play. It shows what happens (checks, items, hints, deaths), and
+   what you type at the bottom goes to the multiworld: `!hint <item>` asks for a hint, `/help` lists
+   the rest. The same is written to `client.log`.
+5. "Tracker" opens the technology tree of the game with what every technology holds, what is
+   checked, what can come up as research right now and what you have received. Drag to move, use
+   the wheel to zoom, click a technology to keep it shown, and type in Find to light up what
+   matches. The kinds at the top filter the tree, a click on a heading folds its part away, and the
+   sun switches between the dark and the light theme. What a location holds is hidden until you
+   have checked it, unless you turn on "Spoilers".
+6. If you lose, start a new game while connected to the same slot: it starts with everything the
+   multiworld has given you so far.
+
+`event ap.100` in the game's console opens a small Archipelago menu.
 
 ## How it works
 
@@ -22,49 +71,33 @@ so far this is the bridge prototype between the game and a client, without a ser
   `game.log`, which the client reads.
 - `stellaris_ap` is the client. Stellaris cannot receive data while it runs, so the client writes
   the id of each received item into a script variable (`ap_mailbox`) in the memory of the running
-  game. The mod looks into that mailbox once a day and grants the item. Nothing happens on screen,
-  and items arrive while the game is not paused. Windows and single player only.
-- `data/` holds the item and location tables shared by the mod and the client.
-  `python -m stellaris_ap.extract` reads the technologies from the installed game, and
-  `python -m stellaris_ap.build_mod` generates the mod from them. Run both after a game update.
-
-As a fallback the client also writes all received items to `ap.txt` in the Stellaris user
-directory, which can be run with the console command `run ap.txt`. `--delivery console` makes the
-client do that itself by pressing keys in the game; `mod/archipelago_hidden_console` is an
-optional mod that moves the console off screen for that mode.
+  game. The mod looks into that mailbox once a day and grants the item.
+- `data/` holds the item and location tables shared by the mod, the client and the world.
 
 ## The Archipelago world
 
-`apworld/stellaris` is the world, which `python -m stellaris_ap.build_apworld --install` packs into
-`stellaris.apworld` and copies into Archipelago's `custom_worlds` folder. Its options:
+`apworld/stellaris` is the world, packed into `stellaris.apworld`. Its options:
 
-- `goal`: collect Precursor Fragments (`fragment_count`, `fragments_required`), or send a share of
-  your locations (`locations_required`).
+- `goal`: collect Precursor Fragments (`fragment_count`, `fragments_required`), send a share of your
+  locations (`locations_required`), defeat the endgame crisis, or defeat it with no awakened fallen
+  empire left.
 - `owned_dlc`, `empire_type`: technologies and traditions the player cannot use stay out of the
   multiworld. The locations are the same for everyone.
 - `early_progression`: the late game (technologies of tier 4 and 5, tradition trees 5 to 7,
   ascension perks 5 to 8) only holds filler.
-- `death_link`, `deaths_per_doom`, `doom`.
+- `random_events`: how many Random Events are mixed in, which do something good or bad on arrival.
+- DeathLink: `death_link`, what sends a death (`death_on_ruler`, `death_on_leader`,
+  `death_on_colony`, `death_on_battle`), what a received death takes (`death_effect`), and the doom
+  that destroys a colony after some deaths (`deaths_per_doom`, `doom`, `doom_capital`).
 
-## Playing
+## Development
 
-Requires Python 3.10+ on Windows. The one package the client needs (`websockets`) is installed by
-itself at the first start.
-
-1. `python -m stellaris_ap.build_mod --install`, then enable "Archipelago" in the Stellaris launcher.
-2. Double click `Play Stellaris Archipelago.bat`. In the window that opens, enter the address of
-   the server, the name of your slot and its password, and press Connect. The client names the
-   technologies and traditions in game after what they send, then "Start Stellaris" starts the game.
-   "Offline" plays a randomizer of the client's own instead, without a server.
-3. The window stays open while you play. It shows what happens (checks, items, hints, deaths), and
-   what you type at the bottom goes to the multiworld: `!hint <item>` asks for a hint, `/help`
-   lists the rest. The same is written to `client.log`.
-4. A new game belongs to the multiworld slot (or offline shuffle) it was started under, and its
-   saves keep that: with another one connected, a save sends and receives nothing, and says so in
-   game.
-5. In game, items arrive with a message. `event ap.100` in the console opens the Archipelago menu.
-
-`python -m stellaris_ap.client --offline` is the client without a window, for testing, and
-`python tools/try_server.py <address> <slot>` plays a few checks against a server without the game.
-
-Tests: `python -m unittest discover -s tests`
+- `python -m stellaris_ap.extract` reads the technologies and traditions from the installed game
+  into `data/`, `python -m stellaris_ap.build_mod` generates the mod from them, and
+  `python -m stellaris_ap.build_apworld --install` packs the world and copies it into Archipelago.
+  Run all three after a game update.
+- `python -m unittest discover -s tests` runs the tests. The ones that compare with the game are
+  skipped where it is not installed.
+- `python -m stellaris_ap.client --offline` is the client without a window and without a server, and
+  `python tools/try_server.py <address> <slot>` plays a few checks against a server without the game.
+- A tag `v*` on master makes a release: the zip with everything needed to play, and the world.

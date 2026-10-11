@@ -48,6 +48,7 @@ def main() -> None:
         session.stop()
     # The names in the mod are those of this test now: back to the default ones
     build_mod.write_check_names()
+    build_mod.write_session()
 
 
 if __name__ == "__main__":

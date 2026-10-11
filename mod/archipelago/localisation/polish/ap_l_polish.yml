@@ -32,6 +32,7 @@
  ap.21.name:0 "Archipelago: Random Event"
  ap.21.desc:0 "[Root.GetAPEvent]"
  ap.21.a:0 "So be it."
+ ap.22.desc:0 "The random events this run has received so far have struck again, each with a new outcome.\n\nOur empire starts with everything the run has received."
  ap_event_0:0 "Nothing happens."
  ap_event_1:0 "§GA windfall.§! A convoy nobody remembers ordering arrives with minerals and energy credits."
  ap_event_2:0 "§GA breakthrough.§! Our scientists see everything a little more clearly: research is faster for five years."

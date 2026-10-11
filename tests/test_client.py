@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from stellaris_ap import data
-from stellaris_ap import app, client, session
+from stellaris_ap import app, build_mod, client, session
 from stellaris_ap.client import GameWatch, shuffle
 from stellaris_ap.mailbox import MAX_RUN
 from stellaris_ap.paths import MOD_DIR, REPO
@@ -153,6 +153,17 @@ class BackgroundTest(unittest.TestCase):
         self.assertNotIn("shuffle", menu, "a new run is made in the launcher")
         for option, number in (("death", session.MENU_DEATH), ("doom", session.MENU_DOOM)):
             self.assertRegex(menu, rf'name = ap\.100\.{option}\s+hidden_effect = \{{ log = "AP_CMD {number}" \}}')
+
+    def test_the_mod_is_registered_with_the_launcher(self):
+        with tempfile.TemporaryDirectory() as folder:
+            user_dir = Path(folder)
+            self.assertTrue(build_mod.register(user_dir))
+            text = (user_dir / "mod" / "archipelago.mod").read_text(encoding="utf-8")
+            self.assertIn('name="Archipelago"', text)
+            self.assertIn(f'path="{MOD_DIR.as_posix()}"', text)
+            self.assertFalse(build_mod.register(user_dir), "already known")
+            self.assertEqual([path.name for path in (user_dir / "mod").iterdir()], ["archipelago.mod"],
+                             "only the mod a player needs")
 
     def test_launcher_starts_the_client_and_the_game(self):
         script = (REPO / "Play Stellaris Archipelago.bat").read_text(encoding="utf-8")

@@ -1,0 +1,23 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+
+jobs:
+  tests:
+    # The client only runs on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install what the client needs
+        run: python -m pip install -r requirements.txt
+      - name: Pack the Archipelago world
+        run: python -m stellaris_ap.build_apworld
+      # The tests that compare with the game are skipped: it is not installed here
+      - name: Run the tests
+        run: python -m unittest discover -s tests -v

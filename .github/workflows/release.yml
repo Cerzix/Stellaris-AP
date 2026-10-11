@@ -1,0 +1,57 @@
+name: Release
+
+# A tag v* makes a release, if what it tags is on master. Master only changes through pull requests,
+# so a release is always something that was reviewed.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check that the tag is on master
+        shell: bash
+        run: |
+          git fetch origin master
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+            echo "::error::The tag $GITHUB_REF_NAME is not on master. Releases are only made from master."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install what the client needs
+        run: python -m pip install -r requirements.txt
+      - name: Pack the Archipelago world
+        run: python -m stellaris_ap.build_apworld
+      - name: Run the tests
+        run: python -m unittest discover -s tests
+
+      - name: Put the release together
+        shell: pwsh
+        run: |
+          $name = "Stellaris-Archipelago-$env:GITHUB_REF_NAME"
+          $folder = New-Item -ItemType Directory "release/$name"
+          # Everything the client and the game need, and nothing else
+          Copy-Item stellaris_ap, mod, data, apworld -Destination $folder -Recurse
+          Copy-Item README.md, CHANGELOG.md, requirements.txt, stellaris.apworld, "Play Stellaris Archipelago.bat" -Destination $folder
+          Get-ChildItem $folder -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
+          Compress-Archive -Path $folder -DestinationPath "release/$name.zip"
+          Get-ChildItem $folder | Select-Object Name
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/Stellaris-Archipelago-${{ github.ref_name }}.zip
+            stellaris.apworld
+          generate_release_notes: true

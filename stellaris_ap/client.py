@@ -33,8 +33,6 @@ OFFLINE_SLOT = 1
 OFFLINE_HELP = """Commands:
   item <id or name>   send an extra item to the game
   sent                list the items sent so far
-  death               a DeathLink death arrives from the multiworld
-  doom                destroy a colony right away
   quit"""
 
 # Only one client at a time may write into the game. A port that is taken means another one is running
@@ -70,6 +68,7 @@ def write_names(profile: Profile) -> None:
     build_mod.write_check_names(
         {location: (items[item]["name"], "you") for location, item in shuffle(profile.seed).items()},
         players={OFFLINE_SLOT: "you"})
+    build_mod.write_session(profile.run, [items[item] for item, _ in profile.sent], profile.checked)
 
 
 class GameWatch:
@@ -148,10 +147,6 @@ def run_profile(args, user_dir, lock: socket.socket, profile: Profile) -> None:
         argument = argument.strip().lower()
         if verb == "quit":
             return
-        elif verb == "death":
-            bridge.receive_death()
-        elif verb == "doom":
-            bridge.send_doom()
         elif verb == "sent":
             for index, item in enumerate(sent_items(), 1):
                 print(f"  {index}. {item['name']}")

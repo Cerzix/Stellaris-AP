@@ -4,6 +4,7 @@ The window shows up for a second. The test is skipped while Stellaris is in fron
 so that it never presses keys in the game.
 """
 import ctypes
+import os
 import time
 import tkinter
 import unittest
@@ -27,6 +28,8 @@ class KeyPressTest(unittest.TestCase):
         self.assertEqual(ctypes.sizeof(console.INPUT), 40 if ctypes.sizeof(ctypes.c_void_p) == 8 else 28)
 
     def test_keys_arrive_in_the_focused_window(self):
+        if os.environ.get("CI"):
+            self.skipTest("no desktop to press keys on")
         if console.stellaris_is_foreground():
             self.skipTest("Stellaris is in front")
         window = tkinter.Tk()

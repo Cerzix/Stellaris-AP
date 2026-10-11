@@ -16,12 +16,14 @@ import time
 import tkinter
 from tkinter import messagebox, ttk
 
-from . import data
+from . import build_mod, data
 from .client import LOG_FILE, asked_to_quit, only_instance, shuffle
 from .memory import stellaris_pid
 from .paths import WRITE_BLOCKED_HINT, stellaris_user_dir
 from .profiles import Profile, Profiles
 from .session import OfflineSession, ServerSession, Session
+from .settings import Settings
+from .tracker import TrackerState, TrackerWindow
 
 STELLARIS = "steam://rungameid/281990"
 DEFAULT_SERVER = "archipelago.gg:"
@@ -50,7 +52,8 @@ def plain(parts) -> str:
 
 
 class App:
-    def __init__(self, store: Profiles, user_dir, lock=None, log_file=LOG_FILE, delivery: str = "memory"):
+    def __init__(self, store: Profiles, user_dir, lock=None, log_file=LOG_FILE, delivery: str = "memory",
+                 settings: Settings | None = None):
         self.store = store
         self.user_dir = user_dir
         self.delivery = delivery
@@ -59,6 +62,9 @@ class App:
         self.requests: queue.Queue = queue.Queue()
         self.lines: queue.Queue = queue.Queue()
         self.closing = False
+        self.tracker: TrackerWindow | None = None
+        self.settings = settings or Settings()
+        self.last_tracker_state = TrackerState()
         self.log_file = open(log_file, "w", encoding="utf-8", buffering=1) if log_file else None
 
         self.window = tkinter.Tk()
@@ -70,7 +76,7 @@ class App:
         self.log("info", "Connect to a multiworld, then start Stellaris. /help lists what you can type below.")
         self.core = threading.Thread(target=self.run_core, daemon=True)
         self.core.start()
-        self.window.after(100, self.refresh)
+        self.timer = self.window.after(100, self.refresh)
 
     # --- the window
 
@@ -98,6 +104,7 @@ class App:
         status.pack(fill="x")
         self.play = ttk.Button(status, text="Start Stellaris", command=self.start_game, state="disabled")
         self.play.pack(side="right")
+        ttk.Button(status, text="Tracker", command=self.open_tracker).pack(side="right", padx=6)
         self.status = ttk.Label(status, text="Not connected.")
         self.status.pack(side="left")
 
@@ -154,6 +161,23 @@ class App:
         self.entry.focus_set()
         self.entry.icursor("end")
 
+    def open_tracker(self) -> None:
+        """Opens the tracker in a window of its own, or brings it to the front."""
+        if self.tracker and not self.tracker.closed:
+            self.tracker.window.lift()
+            self.tracker.window.focus_force()
+            return
+        self.tracker = TrackerWindow(self.window, self.tracker_state, self.settings)
+
+    def tracker_state(self) -> TrackerState:
+        session = self.session
+        try:
+            self.last_tracker_state = session.tracker_state() if session else TrackerState()
+        except RuntimeError:
+            # The other thread changed the run while it was read: the tracker asks again in a moment
+            pass
+        return self.last_tracker_state
+
     def start_game(self) -> None:
         try:
             os.startfile(STELLARIS)
@@ -188,10 +212,13 @@ class App:
             self.status.configure(text="Not connected.")
         else:
             self.status.configure(text=session.status() or "Connecting...")
-        self.window.after(150, self.refresh)
+        self.timer = self.window.after(150, self.refresh)
 
     def close(self) -> None:
         self.closing = True
+        self.window.after_cancel(self.timer)
+        if self.tracker and not self.tracker.closed:
+            self.tracker.close()
         self.requests.put(("quit",))
         self.core.join(3)
         if self.log_file:
@@ -281,6 +308,12 @@ def main() -> None:
         messagebox.showerror("Stellaris Archipelago",
                              WRITE_BLOCKED_HINT.format(path=error.filename or user_dir, python=sys.executable))
         return
+    try:
+        if build_mod.register(user_dir):
+            app.log("info", 'The mod was registered with the Stellaris launcher. Add "Archipelago" to your '
+                            "playset there and enable it, once.")
+    except OSError as error:
+        app.log("error", WRITE_BLOCKED_HINT.format(path=error.filename or user_dir, python=sys.executable))
     if stellaris_pid() is not None:
         app.log("info", "Stellaris is already running. After connecting, restart it to see the right names.")
     app.window.mainloop()

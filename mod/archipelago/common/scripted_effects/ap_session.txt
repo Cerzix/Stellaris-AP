@@ -1,0 +1,5 @@
+# Written by the client for the run that is played, do not edit. Empty while no client runs.
+
+# Scope: country
+ap_start_run = {
+}

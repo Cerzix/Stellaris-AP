@@ -29,7 +29,7 @@ EVENT_KEYS = {"namespace", "event", "country_event", "id", "hide_window", "is_tr
               "modifier", "multiplier",
               # Scopes
               "owner", "from", "fromfrom", "planet_event",
-              "show_notification", "CAPITAL", "OR", "years",
+              "show_notification", "CAPITAL", "OR", "years", "factor",
               # A scripted trigger of the game
               "crisis_happened_and_defeated"}
 # The parsed form of build_mod.NOT_AI
@@ -567,10 +567,21 @@ class ScriptTest(unittest.TestCase):
 
     def test_random_events(self):
         effects = pdx.parse(strip_comments(mod_script("common/scripted_effects")))
-        event = dict((key, value) for key, _, value in effects)["ap_random_event"]
-        outcomes = [value for _, _, value in pdx.get(event, "random_list")]
+        named = dict((key, value) for key, _, value in effects)
+        self.assertEqual(named["ap_random_event"], [("ap_random_event_roll", "=", "yes"),
+                                                    ("country_event", "=", [("id", "=", "ap.21")])])
+        outcomes = [value for _, _, value in pdx.get(named["ap_random_event_roll"], "random_list")]
         kinds = [int(pdx.get(pdx.get(outcome, "set_variable"), "value")) for outcome in outcomes]
         self.assertEqual(kinds, list(range(1, build_mod.RANDOM_EVENTS + 1)))
+        # A new game does not start by losing a fleet to an event that is played again
+        for outcome in outcomes:
+            guarded = pdx.get(outcome, "modifier") == [("factor", "=", "0"), ("has_country_flag", "=", "ap_starting_run")]
+            self.assertEqual(guarded, "ap_death_fleet" in repr(outcome))
+        setup = named["ap_setup_player"]
+        start = next(value for key, _, value in setup if key == "if" and ("ap_start_run", "=", "yes") in value)
+        order = [entry for entry in start if entry[0] != "limit"]
+        self.assertEqual(order[-3:], [("set_country_flag", "=", "ap_starting_run"), ("ap_start_run", "=", "yes"),
+                                      ("remove_country_flag", "=", "ap_starting_run")])
         names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
         modifiers = dict((key, value) for key, _, value in pdx.parse_file(
             MOD_DIR / "common" / "static_modifiers" / "ap_static_modifiers.txt"))
@@ -583,6 +594,50 @@ class ScriptTest(unittest.TestCase):
         item = next(item for item in data.items() if item["name"] == data.tables.RANDOM_EVENT)
         self.assertEqual((item["effect"], item["count"]), ("ap_random_event = yes", 0))
         self.assertNotIn(item["id"], data.item_pool(random.Random(1)), "only in a multiworld that asks for them")
+
+    def test_a_new_game_starts_with_the_unlocks_of_its_run(self):
+        items = {item["name"]: item for item in data.items()}
+        technology = next(item for item in data.items() if item["kind"] == "technology")
+        tradition = next(item for item in data.items() if item["kind"] == "tradition")
+        received = [technology, items["Mineral Cache"], items[data.PROGRESSIVE_ASCENSION], tradition,
+                    items["Random Event"], items[data.PROGRESSIVE_ASCENSION], items[data.tables.FRAGMENT]]
+        start = dict((key, value) for key, _, value in pdx.parse(
+            build_mod.render_session(77, received, [1001, 3, 2005, 3])))["ap_start_run"]
+        self.assertEqual(start[0], ("set_variable", "=", [("which", "=", "ap_run"), ("value", "=", "77")]))
+        self.assertEqual([entry for entry in start if entry[0] == "ap_add_ascension_slot"],
+                         [("ap_add_ascension_slot", "=", "yes")] * 2)
+        self.assertIn(("add_tradition", "=", tradition["effect"].split(" = ")[1]), start)
+        given = [pdx.get(value, "tech") for key, _, value in start if key == "give_technology"]
+        self.assertEqual(given, [technology["effect"].split("tech = ")[1].split()[0], "ap_check_3"],
+                         "the technology received, and the one of the location that is done")
+        # Resources too, and a new random event for every one received, without their messages
+        self.assertEqual(sum(key == "add_resource" for key, _, _ in start), 2, "the cache and the fragment")
+        keys = [key for key, _, _ in start]
+        self.assertEqual(keys.count("ap_random_event_roll"), 1)
+        self.assertEqual(keys[keys.index("ap_random_event_roll") - 1], "reroll_random")
+        self.assertNotIn("ap_random_event", keys, "that one shows a message")
+        self.assertIn(("country_event", "=", [("id", "=", "ap.22")]), start)
+        self.assertNotIn("ap.22", build_mod.render_session(77, [technology], []), "only if there was one")
+        self.assertNotIn("message = yes", build_mod.render_session(77, received, [3]))
+        self.assertIn(("set_variable", "=", [("which", "=", "ap_item_index"), ("value", "=", "7")]), start,
+                      "the game goes on after everything received")
+        # Without a run nothing happens
+        self.assertEqual(pdx.parse(build_mod.render_session())[0], ("ap_start_run", "=", []))
+
+    def test_only_a_new_game_starts_the_run(self):
+        effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
+        setup = effects["ap_setup_player"]
+        first = setup[1][2]
+        self.assertEqual(pdx.get(first, "limit"), [("NOT", "=", [("has_country_flag", "=", "ap_player")])])
+        self.assertIn(("set_country_flag", "=", "ap_new_game"), first)
+        start = next(value for key, _, value in setup if key == "if"
+                     and pdx.get(value, "limit") == [("has_country_flag", "=", "ap_new_game")])
+        self.assertIn(("ap_start_run", "=", "yes"), start)
+        self.assertIn(("remove_country_flag", "=", "ap_new_game"), start)
+        ready = [index for index, (key, _, value) in enumerate(setup)
+                 if key == "if" and "ap_run_ready" in repr(value) or key == "if" and "ap_traditions_ready" in repr(value)]
+        self.assertLess(max(ready), setup.index(("if", "=", start)), "after the variables it sets are there")
+        self.assertIn("ap_start_run", effects)
 
     def test_goals_about_the_galaxy_are_reported(self):
         effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))

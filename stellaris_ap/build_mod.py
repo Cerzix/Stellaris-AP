@@ -82,6 +82,8 @@ EVENT_TEXT = {
     "ap.21.name": "Archipelago: Random Event",
     "ap.21.desc": "[Root.GetAPEvent]",
     "ap.21.a": "So be it.",
+    "ap.22.desc": "The random events this run has received so far have struck again, each with a new outcome."
+                  "\\n\\nOur empire starts with everything the run has received.",
     "ap_event_0": "Nothing happens.",
     "ap_event_1": "§GA windfall.§! A convoy nobody remembers ordering arrives with minerals and energy credits.",
     "ap_event_2": "§GA breakthrough.§! Our scientists see everything a little more clearly: research is faster "
@@ -118,6 +120,7 @@ ICON_SIZE = 52
 TRADITION_ICON = "gfx/interface/icons/traditions/ap_tradition.dds"
 TRADITION_ICON_SIZE = 45
 TRADITIONS_FILE = "ap_traditions.txt"
+SESSION_FILE = "ap_session.txt"
 
 
 def check_tradition(key: str) -> str:
@@ -412,6 +415,42 @@ def write_check_names(names: dict[int, tuple[str, str]] | None = None, players: 
               render_check_names(data.locations(), language, names, players), encoding="utf-8-sig")
 
 
+def render_session(run: int = 0, items=(), checked=()) -> str:
+    """ap_start_run, which the mod calls when a new game starts: the game belongs to the run right away, and
+    has what the run has received so far. That is how a player who lost goes on with a new game.
+
+    items: every item received so far, in order. All of them are granted again, without their messages:
+    technologies, traditions, ascension perk slots and resources. For every Random Event a new one is
+    played, which need not be the same as the first time.
+    checked: the ids of the locations that are done. Their technologies count as researched.
+    """
+    lines = []
+    if run:
+        lines.append(f"\tset_variable = {{ which = ap_run value = {run} }}\n")
+        events = 0
+        for item in items:
+            if item["name"] == data.tables.RANDOM_EVENT:
+                events += 1
+                # Without this every one of them would turn out the same
+                lines.append("\treroll_random = yes\n\tap_random_event_roll = yes\n")
+            else:
+                lines.append(f"\t{item['effect'].replace('message = yes', 'message = no')}\n")
+        if events:
+            lines.append("\tcountry_event = { id = ap.22 }\n")
+        # The game goes on with the items that come after these
+        lines.append(f"\tset_variable = {{ which = ap_item_index value = {len(items)} }}\n")
+        technologies = {location["id"]: location for location in of_kind(data.locations(), "technology")}
+        for location in sorted(set(checked) & set(technologies)):
+            lines.append(f"\tgive_technology = {{ tech = {tech_key(technologies[location])} message = no }}\n")
+    return ("# Written by the client for the run that is played, do not edit. Empty while no client runs.\n"
+            f"\n# Scope: country\nap_start_run = {{\n{''.join(lines)}}}\n")
+
+
+def write_session(run: int = 0, items=(), checked=()) -> None:
+    """Like the names, the game reads this when it starts."""
+    write(MOD_DIR / "common" / "scripted_effects" / SESSION_FILE, render_session(run, items, checked))
+
+
 def render_icon(source, size: int = ICON_SIZE) -> bytes:
     """The icon as an uncompressed 32 bit DDS, the format of the vanilla technology and tradition icons."""
     from PIL import Image
@@ -458,6 +497,7 @@ def build(game_dir) -> None:
         write(MOD_DIR / "localisation" / language / f"ap_l_{language}.yml",
               render_localisation(language), encoding="utf-8-sig")
     write_check_names()
+    write_session()
     if ICON_SOURCE.is_file():
         try:
             icon = render_icon(ICON_SOURCE)
@@ -471,15 +511,28 @@ def build(game_dir) -> None:
     print(f"Generated {len(locations)} checks and {len(overrides)} technology files into {MOD_DIR}")
 
 
-def install(user_dir) -> None:
-    for mod_dir in (MOD_DIR, HIDDEN_CONSOLE_MOD_DIR):
+def register(user_dir, mod_dirs=(MOD_DIR,)) -> bool:
+    """Tells the Stellaris launcher where the mod is. Returns whether that was new to it.
+
+    The launcher finds a mod through a file in the user's mod folder, which holds the path of the mod.
+    """
+    changed = False
+    for mod_dir in mod_dirs:
         descriptor = (mod_dir / "descriptor.mod").read_text(encoding="utf-8")
         target = user_dir / "mod" / f"{mod_dir.name}.mod"
-        try:
-            write(target, f'{descriptor}path="{mod_dir.as_posix()}"\n')
-        except OSError:
-            sys.exit(WRITE_BLOCKED_HINT.format(path=target, python=sys.executable))
-        print(f"Registered mod: {target}")
+        text = f'{descriptor}path="{mod_dir.as_posix()}"\n'
+        if not target.is_file() or target.read_text(encoding="utf-8") != text:
+            write(target, text)
+            changed = True
+    return changed
+
+
+def install(user_dir) -> None:
+    try:
+        register(user_dir, (MOD_DIR, HIDDEN_CONSOLE_MOD_DIR))
+    except OSError as error:
+        sys.exit(WRITE_BLOCKED_HINT.format(path=error.filename, python=sys.executable))
+    print(f"Registered the mods in {user_dir / 'mod'}")
 
 
 def main() -> None:
