@@ -109,7 +109,9 @@ class StateTest(unittest.TestCase):
         """As in the game, where the technology in the place of Destroyers is called after its item."""
         self.assertEqual(tracker.name_of(self.destroyers, self.state), "Ender Pearl")
         self.assertEqual(tracker.name_of(self.cruisers, self.state), "Blue Lasers")
-        self.assertEqual(tracker.name_of(self.tree.nodes["tech_battleships"], self.state), "Battleships", "not known yet")
+        self.assertEqual(tracker.name_of(self.tree.nodes["tech_battleships"], self.state), "Archipelago Item",
+                         "not known yet")
+        self.assertEqual(tracker.name_of(self.tree.nodes["location_1002"], self.state), "Archipelago Item")
         self.assertEqual(tracker.name_of(self.tree.nodes["tech_corvettes"], self.state), "Corvettes")
         self.assertEqual(tracker.short("x" * 40), "x" * (tracker.LABEL_LENGTH - 1) + "\u2026")
         self.assertEqual(tracker.short("16 Diamonds"), "16 Diamonds")
@@ -192,10 +194,11 @@ class StateTest(unittest.TestCase):
         self.assertIn("Location: comes up after 5 more technologies of tier 2 in Engineering", text)
         self.assertIn("The technology itself: received", text)
         self.assertIn("What it holds is not known yet", self.text("tech_battleships"))
+        self.assertTrue(self.text("tech_battleships").startswith("Archipelago Item\nin the place of Battleships\n"))
         self.assertIn("A base technology", self.text("tech_corvettes"))
         self.assertIn("A repeatable technology", self.text("tech_repeatable_weapon_type_energy_damage"))
         self.assertIn("Needs Apocalypse", self.text("tech_titans"))
-        self.assertIn("Tree 1: Adopted", self.text("location_1001"))
+        self.assertIn("in the place of Tree 1: Adopted", self.text("location_1001"))
         self.assertIn("Location: can be picked now", self.text("location_1002"))
 
     def test_search(self):

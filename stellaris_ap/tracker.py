@@ -37,6 +37,8 @@ MIN_ZOOM, MAX_ZOOM = 0.2, 2.0
 # Below this zoom the names are too small to read and are left out
 TEXT_ZOOM = 0.45
 
+# What a location is called while it is not known what it holds
+UNKNOWN_ITEM = "Archipelago Item"
 # The icon of everything that is not a technology of Stellaris
 ARCHIPELAGO_ICON = "archipelago"
 # The filters at the top: what they are called, and the colour of their mark
@@ -254,9 +256,11 @@ def fits(node: Node, state: TrackerState, counts: dict, name: str) -> bool:
 
 def name_of(node: Node, state: TrackerState) -> str:
     """What a node is called in the tree. A location is called after the item it holds, as its technology is
-    in the game: "16 Diamonds" where Destroyers would be. Until that is known, and for a technology the game
-    keeps as it is, it is the name of the technology."""
-    return held(state, node.location)[0] or node.label
+    in the game: "16 Diamonds" where Destroyers would be. Until a run is connected and that is known, it is
+    just an item. A technology the game keeps as it is has its own name."""
+    if node.location is None:
+        return node.label
+    return held(state, node.location)[0] or UNKNOWN_ITEM
 
 
 def short(name: str) -> str:
@@ -303,7 +307,7 @@ def describe(node: Node, state: TrackerState, counts: dict, names: dict[str, str
     """What the side of the window says about a node: (text, kind) parts, with line breaks in the text."""
     parts = [(name_of(node, state) + "\n", "title")]
     technology = node.technology
-    if node.location in state.holds:
+    if node.location is not None:
         # The box is called after what it holds: say where in the tree that is
         parts.append((f"in the place of {node.label}\n", "dim"))
     if technology:
