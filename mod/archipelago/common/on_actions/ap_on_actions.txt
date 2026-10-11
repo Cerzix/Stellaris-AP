@@ -1,0 +1,67 @@
+on_game_start = {
+	events = {
+		ap.1
+	}
+}
+
+on_single_player_save_game_load = {
+	events = {
+		ap.1
+	}
+}
+
+on_tech_increased = {
+	events = {
+		ap.2
+	}
+}
+
+on_monthly_pulse_country = {
+	events = {
+		ap.4
+		ap.6
+	}
+}
+
+on_tradition_picked = {
+	events = {
+		ap.5
+	}
+}
+
+on_ascension_perk_picked = {
+	events = {
+		ap.5
+	}
+}
+
+# Deaths in the player's empire, which the client sends to the multiworld (DeathLink)
+on_leader_death = {
+	events = {
+		ap.30
+	}
+}
+
+on_fleet_destroyed_victim = {
+	events = {
+		ap.31
+	}
+}
+
+on_space_battle_lost = {
+	events = {
+		ap.31
+	}
+}
+
+on_planet_occupied = {
+	events = {
+		ap.32
+	}
+}
+
+on_colony_destroyed = {
+	events = {
+		ap.33
+	}
+}

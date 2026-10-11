@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+offline_state.json
+client.log
+apworld/stellaris/data/
+stellaris.apworld
+profiles.json

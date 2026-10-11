@@ -1,0 +1,290 @@
+namespace = ap
+
+# Game start / save load: find the human player and set up the bridge
+event = {
+	id = ap.1
+	hide_window = yes
+	is_triggered_only = yes
+
+	immediate = {
+		every_playable_country = {
+			limit = { is_ai = no }
+			ap_setup_player = yes
+		}
+		# Countries with this flag research the normal technologies, see NOT_AI in build_mod.py
+		every_country = {
+			limit = { is_ai = yes }
+			set_country_flag = ap_ai
+		}
+	}
+}
+
+# Every month: countries that appeared during the game
+country_event = {
+	id = ap.4
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		is_ai = yes
+		NOT = { has_country_flag = ap_ai }
+	}
+
+	immediate = {
+		set_country_flag = ap_ai
+	}
+}
+
+# The player finished a technology: if it is a check, report it to the client
+country_event = {
+	id = ap.2
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_country_flag = ap_player
+	}
+
+	immediate = {
+		ap_report_last_check = yes
+	}
+}
+
+# The player picked a tradition or an ascension perk, which are locations
+country_event = {
+	id = ap.5
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_country_flag = ap_player
+	}
+
+	immediate = {
+		ap_assign_tree_slots = yes
+		ap_report_picks = yes
+	}
+}
+
+# Every month: has the player achieved something a goal is about? Until both are reported
+country_event = {
+	id = ap.6
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_country_flag = ap_player
+		NOT = { has_country_flag = ap_goal_crisis_fallen }
+	}
+
+	immediate = {
+		ap_report_goals = yes
+	}
+}
+
+# Daily poll of the mailbox, started by ap_setup_player
+country_event = {
+	id = ap.3
+	hide_window = yes
+	is_triggered_only = yes
+
+	immediate = {
+		ap_poll_mailbox = yes
+		country_event = { id = ap.3 days = 1 }
+	}
+}
+
+# An item arrived, fired by ap_poll_mailbox. The text reads ap_last_item and ap_last_sender
+country_event = {
+	id = ap.20
+	title = ap.20.name
+	desc = ap.20.desc
+	picture = GFX_evt_cargoship_caravan
+	is_triggered_only = yes
+
+	option = {
+		name = ap.20.a
+		hidden_effect = {
+			remove_country_flag = ap_message_open
+		}
+	}
+}
+
+# A death in the multiworld was counted, fired by ap_poll_mailbox
+country_event = {
+	id = ap.12
+	title = ap.12.name
+	desc = ap.12.desc
+	picture = GFX_evt_shattered_planet
+	is_triggered_only = yes
+
+	option = {
+		name = ap.12.a
+	}
+}
+
+# A death in the multiworld, where there is no doom to count towards
+country_event = {
+	id = ap.14
+	title = ap.12.name
+	desc = ap.14.desc
+	picture = GFX_evt_shattered_planet
+	is_triggered_only = yes
+
+	option = {
+		name = ap.14.a
+	}
+}
+
+# The item Random Event, fired by ap_random_event
+country_event = {
+	id = ap.21
+	title = ap.21.name
+	desc = ap.21.desc
+	picture = GFX_evt_cargoship_caravan
+	is_triggered_only = yes
+
+	option = {
+		name = ap.21.a
+	}
+}
+
+# The save belongs to another run than the one the client plays, fired by ap_poll_mailbox
+country_event = {
+	id = ap.13
+	title = ap.13.name
+	desc = ap.13.desc
+	picture = GFX_evt_cargoship_caravan
+	is_triggered_only = yes
+
+	option = {
+		name = ap.13.a
+	}
+}
+
+# DeathLink doom destroyed a colony, fired by ap_doom
+country_event = {
+	id = ap.10
+	title = ap.10.name
+	desc = ap.10.desc
+	picture = GFX_evt_shattered_planet
+	location = event_target:ap_doom_planet
+	is_triggered_only = yes
+
+	option = {
+		name = ap.10.a
+	}
+}
+
+# DeathLink doom found no colony to destroy
+country_event = {
+	id = ap.11
+	title = ap.11.name
+	desc = ap.11.desc
+	picture = GFX_evt_shattered_planet
+	is_triggered_only = yes
+
+	option = {
+		name = ap.11.a
+	}
+}
+
+# Deaths in the player's empire. The client reads them from the log as "AP_DEATH <kind> <name>", see DEATHS
+# there. Not while a doom is carried out: that is a death that was received, not one to send.
+
+# A leader died. This = country, From = leader
+country_event = {
+	id = ap.30
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_country_flag = ap_player
+		NOT = { has_country_flag = ap_dooming }
+	}
+
+	immediate = {
+		if = {
+			limit = { from = { is_ruler = yes } }
+			log = "AP_DEATH 1 [From.GetName]"
+		}
+		else = {
+			log = "AP_DEATH 2 [From.GetName]"
+		}
+	}
+}
+
+# A fleet lost a battle, or was destroyed. This = its owner, FromFrom = the fleet. A lost battle is reported
+# whether the fleet got away or not; a fleet that is gone by then is reported as destroyed instead. The
+# client only sends one death in a while, so a battle of many fleets is one death
+country_event = {
+	id = ap.31
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_country_flag = ap_player
+		NOT = { has_country_flag = ap_dooming }
+		exists = fromfrom
+		fromfrom = { is_ship_class = shipclass_military }
+	}
+
+	immediate = {
+		log = "AP_DEATH 3 [FromFrom.GetName]"
+	}
+}
+
+# A colony was invaded. This = planet, From = its owner
+planet_event = {
+	id = ap.32
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		from = { has_country_flag = ap_player }
+	}
+
+	immediate = {
+		log = "AP_DEATH 4 [This.GetName]"
+	}
+}
+
+# A colony was destroyed. This = planet, which still has its owner
+planet_event = {
+	id = ap.33
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		exists = owner
+		owner = {
+			has_country_flag = ap_player
+			NOT = { has_country_flag = ap_dooming }
+		}
+	}
+
+	immediate = {
+		log = "AP_DEATH 5 [This.GetName]"
+	}
+}
+
+# The Archipelago menu, opened with "event ap.100" in the console. The client reads the picked option from the log
+country_event = {
+	id = ap.100
+	title = ap.100.name
+	desc = ap.100.desc
+	picture = GFX_evt_cargoship_caravan
+	is_triggered_only = yes
+
+	option = {
+		name = ap.100.death
+		hidden_effect = { log = "AP_CMD 1" }
+	}
+	option = {
+		name = ap.100.doom
+		hidden_effect = { log = "AP_CMD 2" }
+	}
+	option = {
+		name = ap.100.close
+	}
+}

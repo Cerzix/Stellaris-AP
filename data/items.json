@@ -1,0 +1,10 @@
+[
+	{"id": 10001, "name": "Mineral Cache", "effect": "add_resource = { minerals = 1000 }", "count": 0},
+	{"id": 10002, "name": "Energy Cache", "effect": "add_resource = { energy = 1000 }", "count": 0},
+	{"id": 10003, "name": "Alloy Shipment", "effect": "add_resource = { alloys = 300 }", "count": 0},
+	{"id": 10004, "name": "Influence Boost", "effect": "add_resource = { influence = 100 }", "count": 0},
+	{"id": 10005, "name": "Unity Boost", "effect": "add_resource = { unity = 500 }", "count": 0},
+	{"id": 10006, "name": "Progressive Ascension", "effect": "ap_add_ascension_slot = yes", "count": 8},
+	{"id": 10007, "name": "Precursor Fragment", "effect": "add_resource = { unity = 250 }", "count": 0},
+	{"id": 10008, "name": "Random Event", "effect": "ap_random_event = yes", "count": 0}
+]

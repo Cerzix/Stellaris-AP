@@ -1,0 +1,35 @@
+# Ascension perk slots only come from the item Progressive Ascension. Added with a multiplier:
+# the number of those items the player received
+ap_ascension_slots = {
+	ascension_perks_add = 1
+}
+
+# The cost of a tradition grows with the number of traditions, and the player also receives traditions as items
+ap_tradition_cost = {
+	tradition_cost_mult = -0.5
+}
+
+# What the item Random Event can bring, for five years
+ap_event_research_boom = {
+	all_technology_research_speed = 0.2
+}
+
+ap_event_research_slump = {
+	all_technology_research_speed = -0.2
+}
+
+ap_event_golden_age = {
+	planet_stability_add = 10
+}
+
+ap_event_unrest = {
+	planet_stability_add = -10
+}
+
+ap_event_fleet_drills = {
+	ship_fire_rate_mult = 0.15
+}
+
+ap_event_sabotage = {
+	ship_speed_mult = -0.2
+}

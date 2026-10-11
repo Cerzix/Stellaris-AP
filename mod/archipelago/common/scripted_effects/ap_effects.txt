@@ -1,0 +1,374 @@
+# Game -> client: everything the client reads is written to game.log as "AP_<WORD> [number]".
+# Client -> game: the client writes the id of a received item into the variable ap_mailbox,
+# in the memory of the running game. ap_poll_mailbox looks into the mailbox once a day.
+# ap_report_checks, ap_report_setup, ap_report_last_check, ap_report_picks, ap_init_tree_slots,
+# ap_assign_tree_slots and ap_grant_item are generated, see ap_generated_effects.txt
+
+# Scope: the human player's country
+ap_setup_player = {
+	# The client's run file targets this event target
+	save_global_event_target_as = ap_player
+	if = {
+		limit = { NOT = { has_country_flag = ap_player } }
+		set_country_flag = ap_player
+		# Number of received items already applied to this save
+		set_variable = { which = ap_item_index value = 0 }
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_mailbox_ready } }
+		set_country_flag = ap_mailbox_ready
+		set_variable = { which = ap_parity value = 0 }
+		set_variable = { which = ap_mailbox_next value = 0 }
+		# Not positive, so that the first poll does not take it for an item
+		set_variable = { which = ap_mailbox value = -1 }
+		# Starts the daily poll, which keeps itself going
+		country_event = { id = ap.3 days = 1 }
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_doom_ready } }
+		set_country_flag = ap_doom_ready
+		# Number of dooms carried out in this save
+		set_variable = { which = ap_doom_count value = 0 }
+		set_variable = { which = ap_mailbox_dooms value = 0 }
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_signal_ready } }
+		set_country_flag = ap_signal_ready
+		# Number of signals carried out in this save: dooms, and messages about deaths
+		set_variable = { which = ap_signal_count value = 0 }
+		set_variable = { which = ap_death_count value = 0 }
+		set_variable = { which = ap_death_goal value = 0 }
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_events_ready } }
+		set_country_flag = ap_events_ready
+		# What the last death took, and what the last Random Event was, for their messages
+		set_variable = { which = ap_death_effect value = 0 }
+		set_variable = { which = ap_event_kind value = 0 }
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_traditions_ready } }
+		set_country_flag = ap_traditions_ready
+		# Progressive Ascension items received
+		set_variable = { which = ap_slot_balance value = 0 }
+		add_modifier = { modifier = ap_tradition_cost days = -1 }
+		ap_init_tree_slots = yes
+	}
+	if = {
+		limit = { NOT = { has_country_flag = ap_run_ready } }
+		set_country_flag = ap_run_ready
+		# The run this save belongs to: an Archipelago multiworld, or a shuffle of the client. 0 until the
+		# client that is running gives it its own, which it then keeps
+		set_variable = { which = ap_run value = 0 }
+		set_variable = { which = ap_mailbox_run value = 0 }
+	}
+	log = "AP_HELLO"
+	ap_report_setup = yes
+	ap_report_checks = yes
+	ap_report_goals = yes
+}
+
+# Reports what has been achieved in the galaxy, for the goals that are about it. The client reads it from
+# the log as "AP_GOAL <number>", see GOALS there:
+# 1: an endgame crisis happened and was defeated (the game's own rule for it)
+# 2: the same, and no awakened fallen empire is around
+# Scope: country
+ap_report_goals = {
+	if = {
+		limit = { crisis_happened_and_defeated = yes }
+		log = "AP_GOAL 1"
+		set_country_flag = ap_goal_crisis
+		if = {
+			limit = { NOT = { any_country = { is_country_type = awakened_fallen_empire } } }
+			log = "AP_GOAL 2"
+			set_country_flag = ap_goal_crisis_fallen
+		}
+	}
+}
+
+# The item Progressive Ascension: one more ascension perk slot
+# Scope: country
+ap_add_ascension_slot = {
+	change_variable = { which = ap_slot_balance value = 1 }
+	ap_update_ascension_slots = yes
+}
+
+ap_update_ascension_slots = {
+	if = {
+		limit = { has_modifier = ap_ascension_slots }
+		remove_modifier = ap_ascension_slots
+	}
+	if = {
+		limit = { NOT = { check_variable = { which = ap_slot_balance value = 0 } } }
+		add_modifier = { modifier = ap_ascension_slots days = -1 multiplier = ap_slot_balance }
+	}
+}
+
+# Scope: country, once a day
+ap_poll_mailbox = {
+	# Signals, see the client: 20001 and 20002 are the dooms (DOOM_CODES), 20011 and 20012 the same for a
+	# doom that may strike the capital, 20003 the message that the save belongs to another run (WRONG_RUN),
+	# 40000 and above the run of the save (BIND_RUN), 50000 and above a death (DEATH_NOTICE). Everything
+	# else is an item
+	if = {
+		limit = { check_variable = { which = ap_mailbox value = 20001 } }
+		ap_doom_cracked = yes
+		change_variable = { which = ap_doom_count value = 1 }
+		change_variable = { which = ap_signal_count value = 1 }
+	}
+	else_if = {
+		limit = { check_variable = { which = ap_mailbox value = 20002 } }
+		ap_doom_tomb = yes
+		change_variable = { which = ap_doom_count value = 1 }
+		change_variable = { which = ap_signal_count value = 1 }
+	}
+	else_if = {
+		limit = { check_variable = { which = ap_mailbox value = 20011 } }
+		ap_doom_cracked_capital = yes
+		change_variable = { which = ap_doom_count value = 1 }
+		change_variable = { which = ap_signal_count value = 1 }
+	}
+	else_if = {
+		limit = { check_variable = { which = ap_mailbox value = 20012 } }
+		ap_doom_tomb_capital = yes
+		change_variable = { which = ap_doom_count value = 1 }
+		change_variable = { which = ap_signal_count value = 1 }
+	}
+	else_if = {
+		limit = {
+			check_variable = { which = ap_mailbox value >= 50000 }
+			check_variable = { which = ap_mailbox value < 80000 }
+		}
+		# 50000 + 10000 * what the death takes + 100 * deaths so far + deaths for a doom
+		set_variable = { which = ap_death_goal value = ap_mailbox }
+		modulo_variable = { which = ap_death_goal value = 100 }
+		set_variable = { which = ap_death_count value = ap_mailbox }
+		modulo_variable = { which = ap_death_count value = 10000 }
+		divide_variable = { which = ap_death_count value = 100 }
+		floor_variable = ap_death_count
+		set_variable = { which = ap_death_effect value = ap_mailbox }
+		subtract_variable = { which = ap_death_effect value = 50000 }
+		divide_variable = { which = ap_death_effect value = 10000 }
+		floor_variable = ap_death_effect
+		if = {
+			limit = { check_variable = { which = ap_death_effect value = 1 } }
+			ap_death_leader = yes
+		}
+		else_if = {
+			limit = { check_variable = { which = ap_death_effect value = 2 } }
+			ap_death_fleet = yes
+		}
+		change_variable = { which = ap_signal_count value = 1 }
+		if = {
+			limit = { check_variable = { which = ap_death_goal value > 0 } }
+			country_event = { id = ap.12 }
+		}
+		else = {
+			country_event = { id = ap.14 }
+		}
+	}
+	else_if = {
+		limit = { check_variable = { which = ap_mailbox value = 20003 } }
+		change_variable = { which = ap_signal_count value = 1 }
+		country_event = { id = ap.13 }
+	}
+	else_if = {
+		limit = {
+			check_variable = { which = ap_mailbox value >= 40000 }
+			check_variable = { which = ap_mailbox value < 50000 }
+		}
+		# 40000 + the run. A save keeps the run it has
+		if = {
+			limit = { check_variable = { which = ap_run value = 0 } }
+			set_variable = { which = ap_run value = ap_mailbox }
+			subtract_variable = { which = ap_run value = 40000 }
+		}
+		change_variable = { which = ap_signal_count value = 1 }
+	}
+	# One item at a time: the next one waits until the message about this one was closed.
+	# An item that is not taken is overwritten below, and the client sends it again
+	else_if = {
+		limit = {
+			check_variable = { which = ap_mailbox value > 0 }
+			NOT = { has_country_flag = ap_message_open }
+		}
+		# The mailbox holds the id of the item + 100000 * the slot of the player who sent it
+		set_variable = { which = ap_last_sender value = ap_mailbox }
+		divide_variable = { which = ap_last_sender value = 100000 }
+		floor_variable = ap_last_sender
+		set_variable = { which = ap_last_item value = ap_mailbox }
+		modulo_variable = { which = ap_last_item value = 100000 }
+		ap_grant_item = yes
+		change_variable = { which = ap_item_index value = 1 }
+		set_country_flag = ap_message_open
+		country_event = { id = ap.20 }
+	}
+	# The parity flips every day. A value that keeps changing shows the client which copy
+	# of the variable in the game's memory is the one in use.
+	if = {
+		limit = { check_variable = { which = ap_parity value = 0 } }
+		set_variable = { which = ap_parity value = 1 }
+	}
+	else = {
+		set_variable = { which = ap_parity value = 0 }
+	}
+	# An empty mailbox holds -(2 * (items applied + 1) + parity + 1000000 * (signals carried out modulo
+	# 1000) + 1000000000 * run), which tells the client which item this save needs next, whether its
+	# signal has arrived, and which run the save belongs to. It is put together in another variable and
+	# stored in one step: if the client writes at the same moment its item is either taken or
+	# overwritten, and then sent again.
+	set_variable = { which = ap_mailbox_next value = ap_item_index }
+	change_variable = { which = ap_mailbox_next value = 1 }
+	multiply_variable = { which = ap_mailbox_next value = 2 }
+	change_variable = { which = ap_mailbox_next value = ap_parity }
+	set_variable = { which = ap_mailbox_dooms value = ap_signal_count }
+	modulo_variable = { which = ap_mailbox_dooms value = 1000 }
+	multiply_variable = { which = ap_mailbox_dooms value = 1000000 }
+	change_variable = { which = ap_mailbox_next value = ap_mailbox_dooms }
+	set_variable = { which = ap_mailbox_run value = ap_run }
+	multiply_variable = { which = ap_mailbox_run value = 1000000000 }
+	change_variable = { which = ap_mailbox_next value = ap_mailbox_run }
+	multiply_variable = { which = ap_mailbox_next value = -1 }
+	set_variable = { which = ap_mailbox value = ap_mailbox_next }
+}
+
+# A death in the multiworld takes a leader, but not the ruler. ap_death_effect says afterwards what
+# happened, for the message: 1 a leader died, 3 there was none.
+# Scope: country
+ap_death_leader = {
+	if = {
+		limit = { any_owned_leader = { is_ruler = no } }
+		# Not a death to send to the multiworld in turn, see the events ap.30 to ap.33
+		set_country_flag = ap_dooming
+		random_owned_leader = {
+			limit = { is_ruler = no }
+			kill_leader = { show_notification = yes }
+		}
+		remove_country_flag = ap_dooming
+	}
+	else = {
+		set_variable = { which = ap_death_effect value = 3 }
+	}
+}
+
+# A death in the multiworld takes a military fleet. ap_death_effect: 2 a fleet was lost, 3 there was none.
+# Scope: country
+ap_death_fleet = {
+	if = {
+		limit = { any_owned_fleet = { is_ship_class = shipclass_military } }
+		set_country_flag = ap_dooming
+		random_owned_fleet = {
+			limit = { is_ship_class = shipclass_military }
+			destroy_fleet = this
+		}
+		remove_country_flag = ap_dooming
+	}
+	else = {
+		set_variable = { which = ap_death_effect value = 3 }
+	}
+}
+
+# The item Random Event: something happens, good or bad. ap_event_kind says what, for the message
+# Scope: country
+ap_random_event = {
+	random_list = {
+		10 = {
+			set_variable = { which = ap_event_kind value = 1 }
+			add_resource = { minerals = 2000 energy = 2000 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 2 }
+			add_modifier = { modifier = ap_event_research_boom years = 5 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 3 }
+			add_modifier = { modifier = ap_event_golden_age years = 5 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 4 }
+			add_modifier = { modifier = ap_event_fleet_drills years = 5 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 5 }
+			add_resource = { alloys = 500 unity = 1000 influence = 100 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 6 }
+			add_resource = { energy = -1500 minerals = -1500 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 7 }
+			add_modifier = { modifier = ap_event_research_slump years = 5 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 8 }
+			add_modifier = { modifier = ap_event_unrest years = 5 }
+		}
+		10 = {
+			set_variable = { which = ap_event_kind value = 9 }
+			add_modifier = { modifier = ap_event_sabotage years = 5 }
+		}
+		5 = {
+			set_variable = { which = ap_event_kind value = 10 }
+			ap_death_fleet = yes
+		}
+	}
+	country_event = { id = ap.21 }
+}
+
+# DeathLink doom: a random colony is destroyed.
+# Scope: country
+
+# The planet is cracked for good
+ap_doom_cracked = {
+	ap_doom = { CLASS = pc_shattered CAPITAL = no }
+}
+
+# The planet becomes a tomb world covered in ruins, which can be settled again
+ap_doom_tomb = {
+	ap_doom = { CLASS = pc_nuked CAPITAL = no }
+}
+
+# The same, for a doom that may strike the capital too
+ap_doom_cracked_capital = {
+	ap_doom = { CLASS = pc_shattered CAPITAL = yes }
+}
+
+ap_doom_tomb_capital = {
+	ap_doom = { CLASS = pc_nuked CAPITAL = yes }
+}
+
+ap_doom = {
+	if = {
+		limit = { any_owned_planet = { OR = { is_capital = no always = $CAPITAL$ } } }
+		# What dies of the doom is not sent to the multiworld as a death, see the events ap.30 to ap.33
+		set_country_flag = ap_dooming
+		random_owned_planet = {
+			limit = { OR = { is_capital = no always = $CAPITAL$ } }
+			save_event_target_as = ap_doom_planet
+			if = {
+				limit = { exists = orbital_defence }
+				destroy_fleet = orbital_defence
+			}
+			remove_all_buildings = yes
+			destroy_colony = yes
+			# Habitats and ringworlds only lose their colony
+			if = {
+				limit = { is_artificial = no }
+				change_pc = $CLASS$
+			}
+			if = {
+				limit = { is_planet_class = pc_nuked }
+				add_deposit = d_city_ruins
+				add_deposit = d_city_ruins
+				add_deposit = d_city_ruins
+			}
+		}
+		remove_country_flag = ap_dooming
+		country_event = { id = ap.10 }
+	}
+	else = {
+		# Only the capital is left, the empire is spared
+		country_event = { id = ap.11 }
+	}
+}
