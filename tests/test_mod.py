@@ -634,7 +634,6 @@ class ScriptTest(unittest.TestCase):
                      and pdx.get(value, "limit") == [("has_country_flag", "=", "ap_new_game")])
         self.assertIn(("ap_start_run", "=", "yes"), start)
         self.assertIn(("remove_country_flag", "=", "ap_new_game"), start)
-        position = {key: index for index, (key, _, value) in enumerate(setup)}
         ready = [index for index, (key, _, value) in enumerate(setup)
                  if key == "if" and "ap_run_ready" in repr(value) or key == "if" and "ap_traditions_ready" in repr(value)]
         self.assertLess(max(ready), setup.index(("if", "=", start)), "after the variables it sets are there")

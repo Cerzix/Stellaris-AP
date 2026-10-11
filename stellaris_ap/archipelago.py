@@ -8,7 +8,7 @@ from that thread:
     ("refused", [reason, ...])   the server does not let the slot in
     ("disconnected", reason)     the connection is gone, it is made again by itself
     ("items", [item, ...])       every item received so far: {"item", "location", "player", "flags"}
-    ("scouted", {location: {"item": name, "player": name, "flags": n}})
+    ("scouted", {location: {"item": name, "player": name, "flags": n, "game": name}})
     ("print", [(text, kind), ...], type)   a message of the server, in parts. kind: "text", "player",
                                  "me", "location", "progression", "useful", "trap" or "filler"
     ("death", {"source": name, "cause": text})   a DeathLink death
@@ -262,7 +262,8 @@ class Connection:
         elif command == "LocationInfo":
             self.on_event("scouted", {
                 entry["location"]: {"item": self.names.item(entry["item"], entry["player"]),
-                                    "player": self.names.player(entry["player"]), "flags": entry.get("flags", 0)}
+                                    "player": self.names.player(entry["player"]), "flags": entry.get("flags", 0),
+                                    "game": self.names.games.get(entry["player"], "")}
                 for entry in message["locations"]})
         elif command == "PrintJSON":
             self.on_event("print", self.names.render(message.get("data", []), self.slot), message.get("type", ""))

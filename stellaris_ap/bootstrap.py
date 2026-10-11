@@ -29,15 +29,18 @@ def notice(text: str):
         return None
 
 
-def require(package: str, install=install, notice=notice):
-    """The module of a package, which is installed first if it is missing."""
+def require(package: str, install=install, notice=notice, pip_name: str | None = None):
+    """The module of a package, which is installed first if it is missing.
+
+    pip_name: what the package is called where it is installed from, if not like its module."""
+    pip_name = pip_name or package
     try:
         return importlib.import_module(package)
     except ImportError:
         pass
-    window = notice(f"Setting up for the first start: installing {package}...")
+    window = notice(f"Setting up for the first start: installing {pip_name}...")
     try:
-        result = install(package)
+        result = install(pip_name)
     finally:
         if window is not None:
             window.destroy()
@@ -45,5 +48,5 @@ def require(package: str, install=install, notice=notice):
     try:
         return importlib.import_module(package)
     except ImportError:
-        raise ImportError(f"Could not install {package}. Run this yourself: "
-                          f'"{sys.executable}" -m pip install {package}\n\n{result.stderr[-600:]}') from None
+        raise ImportError(f"Could not install {pip_name}. Run this yourself: "
+                          f'"{sys.executable}" -m pip install {pip_name}\n\n{result.stderr[-600:]}') from None

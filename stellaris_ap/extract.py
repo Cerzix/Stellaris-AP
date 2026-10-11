@@ -115,6 +115,8 @@ def read_technologies(game_dir) -> list[dict]:
                 "cost": int(number(pdx.get(value, "cost"), local)),
                 "weight": number(pdx.get(value, "weight"), local),
                 "file": path.name,
+                # The name of its picture, which is its own name unless it borrows another one's
+                "icon": (pdx.get(value, "icon") or key).strip('"'),
                 "dlc": requirements.dlcs(pdx.get(value, "potential", [])),
                 "empires": requirements.empires(pdx.get(value, "potential", [])),
             })

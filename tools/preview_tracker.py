@@ -13,17 +13,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PIL import ImageGrab  # noqa: E402
 
 from stellaris_ap import data, tracker  # noqa: E402
+from stellaris_ap.settings import Settings  # noqa: E402
 
 generator = random.Random(4)
 locations = data.locations()
-names = [item["name"] for item in data.items()] + ["Ender Pearl", "Diamond Sword", "Elytra"]
+own = [(item["name"], item.get("icon")) for item in data.items()]
+foreign = [("Ender Pearl", None), ("Diamond Sword", None), ("Elytra", None)]
 state = tracker.TrackerState(
-    checked={location["id"] for location in locations if generator.random() < 0.25},
-    holds={location["id"]: (generator.choice(names), generator.choice(["Cerzix", "Steve"]),
-                            generator.choice(["progression", "useful", "filler", "filler", "filler", "trap"]))
+    checked={location["id"] for location in locations
+             if generator.random() < (0.6 if location.get("technology", {}).get("tier", 9) <= 2 else 0.05)},
+    holds={location["id"]: (*generator.choice(own + foreign * 60)[:1], generator.choice(["Cerzix", "Steve"]),
+                            generator.choice(["progression", "useful", "filler", "filler", "filler"]), None)
            for location in locations},
     received={item["id"] for item in data.items() if generator.random() < 0.2},
-    goal="Goal: 3 of 10 Precursor Fragments")
+    perk_slots=2, goal="Goal: 3 of 10 Precursor Fragments")
+icons = dict(own)
+state.holds = {location: (item, player, kind, icons.get(item)) for location, (item, player, kind, _) in state.holds.items()}
 
 
 def pump(seconds: float) -> None:
@@ -41,17 +46,20 @@ def grab(name: str) -> None:
 
 root = tkinter.Tk()
 root.withdraw()
-view = tracker.TrackerWindow(root, lambda: state)
+view = tracker.TrackerWindow(root, lambda: state, Settings(None))
 view.window.attributes("-topmost", True)
-pump(1.0)
-grab("overview.png")
-view.search.insert(0, "destroyers")
-view.search_next()
-pump(0.6)
-grab("found.png")
-view.zoom_by(0.4)
-view.zoom_by(0.6)
-pump(0.6)
-grab("far.png")
+view.zoom_by(1.4)
+pump(1.2)
+grab("dark.png")
+view.search.insert(0, "laser")
+view.search_changed()
+pump(0.5)
+grab("search.png")
+view.clear()
+view.set_filter("available")
+view.collapse("picks")
+view.toggle_theme()
+pump(0.8)
+grab("light_available.png")
 view.close()
 root.destroy()

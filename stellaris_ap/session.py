@@ -13,7 +13,7 @@ import time
 from typing import Callable
 
 from . import build_mod, data
-from .archipelago import Connection, item_kind
+from .archipelago import GAME, Connection, item_kind
 from .bridge import DEATHS, GOALS, Bridge
 from .mailbox import MAX_SENDERS
 from .profiles import Profile, Profiles
@@ -56,6 +56,8 @@ class Session:
         self.bridge: Bridge | None = None
         self.profile: Profile | None = None
         self.items = {item["id"]: item for item in data.items()}
+        # The icon of every item that is a technology of Stellaris, by its name
+        self.icons = {item["name"]: item["icon"] for item in data.items() if item["kind"] == "technology"}
         self.locations = {location["id"]: location["name"] for location in data.locations()}
         # Whether the names of the run are written, which the game needs at its start
         self.ready = False
@@ -153,8 +155,10 @@ class OfflineSession(Session):
     def tracker_state(self) -> TrackerState:
         return TrackerState(
             checked=set(self.profile.checked),
-            holds={location: (self.items[item]["name"], "you", "filler") for location, item in self.placement.items()},
-            received={item for item, _ in self.profile.sent})
+            holds={location: (self.items[item]["name"], "you", "filler", self.items[item].get("icon"))
+                   for location, item in self.placement.items()},
+            received={item for item, _ in self.profile.sent},
+            perk_slots=sum(self.items[item]["name"] == data.PROGRESSIVE_ASCENSION for item, _ in self.profile.sent))
 
 
 
@@ -333,9 +337,12 @@ class ServerSession(Session):
 
     def tracker_state(self) -> TrackerState:
         state = super().tracker_state()
-        state.holds = {location: (entry["item"], entry["player"], item_kind(entry["flags"]))
+        state.holds = {location: (entry["item"], entry["player"], item_kind(entry["flags"]),
+                                  self.icons.get(entry["item"]) if entry.get("game") == GAME else None)
                        for location, entry in self.scouted.items()}
         state.received = {entry["item"] for entry in self.received}
+        slot = next(item["id"] for item in self.items.values() if item["name"] == data.PROGRESSIVE_ASCENSION)
+        state.perk_slots = sum(entry["item"] == slot for entry in self.received)
         goal = self.slot_data.get("goal")
         if goal == "fragments":
             fragment = next(item["id"] for item in self.items.values() if item["name"] == data.tables.FRAGMENT)

@@ -22,8 +22,11 @@ The first release: Stellaris in an Archipelago multiworld.
 
 - One window: connect to a multiworld, start the game from it, and watch what happens in a log.
   What you type goes to the multiworld, so `!hint <item>` asks for a hint.
-- A tracker: the technology tree of the game with what every technology holds, what is checked and
-  what you have received. It can be moved, zoomed and searched, and counts the locations done.
+- A tracker: the technology tree of the game with what every technology holds, what is checked,
+  what can come up as research right now and what you have received. It shows the icons of the
+  technologies, can be moved, zoomed, searched as you type and filtered by kind, its parts fold
+  away, and it counts the locations done. It has a dark and a light theme, and its colours can be
+  changed.
 - Items arrive in the running game in the background, with a message that says who sent them.
 - A save belongs to the multiworld slot it was started under. Loaded with another one connected, it
   sends and receives nothing.

@@ -50,7 +50,7 @@ def build_items(technologies: list[dict], trees: list[dict], other: list[dict]) 
     items = [{"id": technology["id"], "name": technology["name"], "kind": "technology", "count": 1,
               "effect": f"give_technology = {{ tech = {technology['key']} message = yes }}",
               "dlc": technology["dlc"], "empires": technology["empires"], "tier": technology["tier"],
-              "weight": technology["weight"]}
+              "weight": technology["weight"], "icon": technology["icon"]}
              for technology in technologies if technology["kind"] == "item"]
     for tree in normal_trees(trees):
         for tradition in tree["traditions"]:

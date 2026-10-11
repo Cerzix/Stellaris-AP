@@ -22,6 +22,7 @@ from .memory import stellaris_pid
 from .paths import WRITE_BLOCKED_HINT, stellaris_user_dir
 from .profiles import Profile, Profiles
 from .session import OfflineSession, ServerSession, Session
+from .settings import Settings
 from .tracker import TrackerState, TrackerWindow
 
 STELLARIS = "steam://rungameid/281990"
@@ -51,7 +52,8 @@ def plain(parts) -> str:
 
 
 class App:
-    def __init__(self, store: Profiles, user_dir, lock=None, log_file=LOG_FILE, delivery: str = "memory"):
+    def __init__(self, store: Profiles, user_dir, lock=None, log_file=LOG_FILE, delivery: str = "memory",
+                 settings: Settings | None = None):
         self.store = store
         self.user_dir = user_dir
         self.delivery = delivery
@@ -61,6 +63,7 @@ class App:
         self.lines: queue.Queue = queue.Queue()
         self.closing = False
         self.tracker: TrackerWindow | None = None
+        self.settings = settings or Settings()
         self.last_tracker_state = TrackerState()
         self.log_file = open(log_file, "w", encoding="utf-8", buffering=1) if log_file else None
 
@@ -73,7 +76,7 @@ class App:
         self.log("info", "Connect to a multiworld, then start Stellaris. /help lists what you can type below.")
         self.core = threading.Thread(target=self.run_core, daemon=True)
         self.core.start()
-        self.window.after(100, self.refresh)
+        self.timer = self.window.after(100, self.refresh)
 
     # --- the window
 
@@ -164,7 +167,7 @@ class App:
             self.tracker.window.lift()
             self.tracker.window.focus_force()
             return
-        self.tracker = TrackerWindow(self.window, self.tracker_state)
+        self.tracker = TrackerWindow(self.window, self.tracker_state, self.settings)
 
     def tracker_state(self) -> TrackerState:
         session = self.session
@@ -209,10 +212,11 @@ class App:
             self.status.configure(text="Not connected.")
         else:
             self.status.configure(text=session.status() or "Connecting...")
-        self.window.after(150, self.refresh)
+        self.timer = self.window.after(150, self.refresh)
 
     def close(self) -> None:
         self.closing = True
+        self.window.after_cancel(self.timer)
         if self.tracker and not self.tracker.closed:
             self.tracker.close()
         self.requests.put(("quit",))

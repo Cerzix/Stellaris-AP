@@ -32,8 +32,10 @@ its installer) and the zip of a [release](../../releases).
    what you type at the bottom goes to the multiworld: `!hint <item>` asks for a hint, `/help` lists
    the rest. The same is written to `client.log`.
 5. "Tracker" opens the technology tree of the game with what every technology holds, what is
-   checked and what you have received. Drag to move, use the wheel to zoom, click a technology to
-   keep it shown.
+   checked, what can come up as research right now and what you have received. Drag to move, use
+   the wheel to zoom, click a technology to keep it shown, and type in Find to light up what
+   matches. The kinds at the top filter the tree, a click on a heading folds its part away, and the
+   sun switches between the dark and the light theme.
 6. If you lose, start a new game while connected to the same slot: it starts with everything the
    multiworld has given you so far.
 
