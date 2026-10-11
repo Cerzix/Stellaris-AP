@@ -11,6 +11,7 @@ ap_setup_player = {
 	if = {
 		limit = { NOT = { has_country_flag = ap_player } }
 		set_country_flag = ap_player
+		set_country_flag = ap_new_game
 		# Number of received items already applied to this save
 		set_variable = { which = ap_item_index value = 0 }
 	}
@@ -61,6 +62,13 @@ ap_setup_player = {
 		# client that is running gives it its own, which it then keeps
 		set_variable = { which = ap_run value = 0 }
 		set_variable = { which = ap_mailbox_run value = 0 }
+	}
+	if = {
+		limit = { has_country_flag = ap_new_game }
+		remove_country_flag = ap_new_game
+		# A new game belongs to the run of the client that is running, and starts with what that run has
+		# unlocked so far. ap_start_run is written by the client, see ap_session.txt
+		ap_start_run = yes
 	}
 	log = "AP_HELLO"
 	ap_report_setup = yes

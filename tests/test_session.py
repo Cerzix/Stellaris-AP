@@ -61,6 +61,13 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(names.player(0), "Archipelago")
 
 
+def keep_mod_files(test, write_session=lambda run=0, items=(), checked=(): None) -> None:
+    """A session writes what a new game starts with into the mod. Not the session of a test."""
+    original = build_mod.write_session
+    build_mod.write_session = write_session
+    test.addCleanup(setattr, build_mod, "write_session", original)
+
+
 class FakeConnection:
     """What a session does to the server, written down."""
 
@@ -112,6 +119,9 @@ class ServerSessionTest(unittest.TestCase):
         original = build_mod.write_check_names
         build_mod.write_check_names = lambda names=None, players=None: self.names.append((names, players))
         self.addCleanup(setattr, build_mod, "write_check_names", original)
+        self.starts = []
+        keep_mod_files(self, lambda run=0, items=(), checked=(): self.starts.append(
+            (run, [item["id"] for item in items], list(checked))))
         self.store = Profiles(self.user_dir / "profiles.json")
         self.session = self.connect()
         self.server = self.session.connection
@@ -186,6 +196,22 @@ class ServerSessionTest(unittest.TestCase):
         self.session.tick()
         self.assertIn(("item", f"Received {first['name']} from Steve"), self.lines)
         self.assertIn(("item", f"Received {second['name']} from Cerzix"), self.lines)
+
+    def test_a_new_game_starts_with_what_the_run_has(self):
+        self.connected(checked=[5])
+        technology, other = data.items()[0], data.items()[1]
+        self.server.on_event("scouted", {5: {"item": "Ender Pearl", "player": "Steve", "flags": 1}})
+        self.server.on_event("items", [{"item": technology["id"], "location": 3, "player": 2, "flags": 0}])
+        self.session.tick()
+        run = self.session.profile.run
+        self.assertEqual(self.starts[-1], (run, [technology["id"]], [5]))
+        self.log("AP_CHECK 9")
+        self.server.on_event("items", [{"item": technology["id"], "location": 3, "player": 2, "flags": 0},
+                                       {"item": other["id"], "location": 4, "player": 2, "flags": 0}])
+        self.session.tick()
+        self.assertEqual(self.starts[-1], (run, [technology["id"], other["id"]], [5, 9]))
+        self.session.stop()
+        self.assertEqual(self.starts[-1], (0, [], []), "without a client a new game belongs to no run")
 
     def test_goal_fragments(self):
         self.connected()
@@ -361,6 +387,7 @@ class OfflineSessionTest(unittest.TestCase):
             original = build_mod.write_check_names
             build_mod.write_check_names = lambda names=None, players=None: None
             self.addCleanup(setattr, build_mod, "write_check_names", original)
+            keep_mod_files(self)
             lines = []
             profile = Profiles(user_dir / "profiles.json").new_offline()
             offline = OfflineSession(user_dir, lambda kind, parts: lines.append((kind, app.plain(parts))), profile,
@@ -384,6 +411,7 @@ class AppTest(unittest.TestCase):
             original = build_mod.write_check_names
             build_mod.write_check_names = lambda names=None, players=None: None
             self.addCleanup(setattr, build_mod, "write_check_names", original)
+            keep_mod_files(self)
             window = app.App(Profiles(user_dir / "profiles.json"), user_dir, log_file=None, delivery="manual")
             try:
                 window.log("item", [("Received ", "text"), ("Destroyers", "progression"), (" from ", "text"),

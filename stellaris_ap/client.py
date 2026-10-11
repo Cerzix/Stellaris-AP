@@ -70,6 +70,7 @@ def write_names(profile: Profile) -> None:
     build_mod.write_check_names(
         {location: (items[item]["name"], "you") for location, item in shuffle(profile.seed).items()},
         players={OFFLINE_SLOT: "you"})
+    build_mod.write_session(profile.run, [items[item] for item, _ in profile.sent], profile.checked)
 
 
 class GameWatch:

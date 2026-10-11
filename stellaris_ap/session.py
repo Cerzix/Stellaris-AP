@@ -73,7 +73,17 @@ class Session:
             self.bridge.tick()
 
     def stop(self) -> None:
-        pass
+        # No client, no run: a game that is started now belongs to none
+        build_mod.write_session()
+
+    def start_items(self) -> list[dict]:
+        """Every item received so far, in order."""
+        return []
+
+    def write_start(self) -> None:
+        """Writes what a new game of the run starts with: the run, its unlocks so far, and the checks done."""
+        if self.profile:
+            build_mod.write_session(self.profile.run, self.start_items(), self.profile.checked)
 
     def on_check(self, location: int) -> None:
         raise NotImplementedError
@@ -117,6 +127,7 @@ class OfflineSession(Session):
         build_mod.write_check_names(
             {location: (self.items[item]["name"], "you") for location, item in self.placement.items()},
             players={OFFLINE_SLOT: "you"})
+        self.write_start()
         self.ready = True
         profile.played()
         self.log("info", f"{profile.name}: {len(profile.checked)} of {len(self.locations)} locations checked.")
@@ -127,12 +138,15 @@ class OfflineSession(Session):
     def sent_items(self) -> list[dict]:
         return [{**self.items[item], "sender": sender} for item, sender in self.profile.sent]
 
+    start_items = sent_items
+
     def on_check(self, location: int) -> None:
         item = self.profile.check(location, self.placement, OFFLINE_SLOT)
         if item is not None:
             self.log("check", [("Checked ", "text"), (self.locations[location], "location"), (": found ", "text"),
                                (self.items[item]["name"], "useful")])
             self.bridge.set_items(self.sent_items())
+            self.write_start()
 
     def status(self) -> str:
         return f"{len(self.profile.checked)} of {len(self.locations)} locations, {len(self.profile.sent)} items"
@@ -146,6 +160,7 @@ class OfflineSession(Session):
                 return
             self.profile.send(item["id"])
             self.bridge.set_items(self.sent_items())
+            self.write_start()
             self.log("item", [("Sending ", "text"), (item["name"], "useful")])
         else:
             super().command(text)
@@ -175,6 +190,10 @@ class ServerSession(Session):
 
     def stop(self) -> None:
         self.connection.stop()
+        super().stop()
+
+    def start_items(self) -> list[dict]:
+        return [self.items[entry["item"]] for entry in self.received if entry["item"] in self.items]
 
     def tick(self) -> None:
         while True:
@@ -228,6 +247,7 @@ class ServerSession(Session):
     def on_scouted(self, found: dict) -> None:
         build_mod.write_check_names({location: (entry["item"], entry["player"]) for location, entry in found.items()},
                                     players={slot: name for slot, name in self.players.items() if slot <= MAX_SENDERS})
+        self.write_start()
         if not self.ready:
             self.ready = True
             self.log("info", "The technologies and traditions are named after what they send. "
@@ -247,6 +267,7 @@ class ServerSession(Session):
                 self.log("item", [("Received ", "text"), (name, item_kind(entry.get("flags", 0))),
                                   (" from ", "text"), (self.connection.names.player(entry["player"]), "player")])
         self.announced = len(received)
+        self.write_start()
         self.check_goal()
 
     def on_print(self, parts: list[tuple[str, str]], kind: str) -> None:
@@ -266,6 +287,7 @@ class ServerSession(Session):
             self.profile.checked.append(location)
             self.store.save()
         self.connection.check([location])
+        self.write_start()
         self.log("check", [("Checked ", "text"), (self.locations.get(location, f"Location {location}"), "location")])
         self.check_goal()
 

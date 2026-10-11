@@ -118,6 +118,7 @@ ICON_SIZE = 52
 TRADITION_ICON = "gfx/interface/icons/traditions/ap_tradition.dds"
 TRADITION_ICON_SIZE = 45
 TRADITIONS_FILE = "ap_traditions.txt"
+SESSION_FILE = "ap_session.txt"
 
 
 def check_tradition(key: str) -> str:
@@ -412,6 +413,34 @@ def write_check_names(names: dict[int, tuple[str, str]] | None = None, players: 
               render_check_names(data.locations(), language, names, players), encoding="utf-8-sig")
 
 
+def render_session(run: int = 0, items=(), checked=()) -> str:
+    """ap_start_run, which the mod calls when a new game starts: the game belongs to the run right away, and
+    has what the run has unlocked so far. That is how a player who lost goes on with a new game.
+
+    items: every item received so far, in order. The unlocks among them are granted: technologies,
+    traditions and ascension perk slots, but nothing that is used up, like resources.
+    checked: the ids of the locations that are done. Their technologies count as researched.
+    """
+    lines = []
+    if run:
+        lines.append(f"\tset_variable = {{ which = ap_run value = {run} }}\n")
+        for item in items:
+            if item["kind"] in ("technology", "tradition") or item["name"] == data.PROGRESSIVE_ASCENSION:
+                lines.append(f"\t{item['effect'].replace('message = yes', 'message = no')}\n")
+        # The game goes on with the items that come after these
+        lines.append(f"\tset_variable = {{ which = ap_item_index value = {len(items)} }}\n")
+        technologies = {location["id"]: location for location in of_kind(data.locations(), "technology")}
+        for location in sorted(set(checked) & set(technologies)):
+            lines.append(f"\tgive_technology = {{ tech = {tech_key(technologies[location])} message = no }}\n")
+    return ("# Written by the client for the run that is played, do not edit. Empty while no client runs.\n"
+            f"\n# Scope: country\nap_start_run = {{\n{''.join(lines)}}}\n")
+
+
+def write_session(run: int = 0, items=(), checked=()) -> None:
+    """Like the names, the game reads this when it starts."""
+    write(MOD_DIR / "common" / "scripted_effects" / SESSION_FILE, render_session(run, items, checked))
+
+
 def render_icon(source, size: int = ICON_SIZE) -> bytes:
     """The icon as an uncompressed 32 bit DDS, the format of the vanilla technology and tradition icons."""
     from PIL import Image
@@ -458,6 +487,7 @@ def build(game_dir) -> None:
         write(MOD_DIR / "localisation" / language / f"ap_l_{language}.yml",
               render_localisation(language), encoding="utf-8-sig")
     write_check_names()
+    write_session()
     if ICON_SOURCE.is_file():
         try:
             icon = render_icon(ICON_SOURCE)
