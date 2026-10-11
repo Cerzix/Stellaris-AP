@@ -174,9 +174,10 @@ class Connection:
         self.send({"cmd": "StatusUpdate", "status": GOAL})
 
     def die(self, cause: str) -> None:
-        """Tells the other players about a death here."""
-        self.send({"cmd": "Bounce", "tags": ["DeathLink"],
-                   "data": {"time": time.time(), "source": self.slot_name, "cause": cause}})
+        """Tells the other players about a death here. Not later, if there is no connection right now."""
+        if self.loop and self.socket:
+            self.send({"cmd": "Bounce", "tags": ["DeathLink"],
+                       "data": {"time": time.time(), "source": self.slot_name, "cause": cause}})
 
     # --- the thread of the connection
 

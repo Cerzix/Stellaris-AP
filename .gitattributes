@@ -1,0 +1,6 @@
+* text=auto
+# Windows runs it with either, but this is what it expects
+*.bat text eol=crlf
+*.dds binary
+*.png binary
+*.apworld binary

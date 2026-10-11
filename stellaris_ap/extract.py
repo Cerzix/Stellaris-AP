@@ -120,6 +120,10 @@ def read_technologies(game_dir) -> list[dict]:
             })
             prerequisites[key] = pdx.values(pdx.get(value, "prerequisites", []))
     technologies.sort(key=lambda technology: technology["key"])
+    # The technologies that come before it in the game's tree, for the tracker
+    known = {technology["key"] for technology in technologies}
+    for technology in technologies:
+        technology["prerequisites"] = [key for key in prerequisites[technology["key"]] if key in known]
 
     # A technology that follows one of a DLC, or one closed to a kind of empire, is no use without it either
     by_key = {technology["key"]: technology for technology in technologies}

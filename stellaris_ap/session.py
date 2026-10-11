@@ -17,6 +17,7 @@ from .archipelago import Connection, item_kind
 from .bridge import DEATHS, GOALS, Bridge
 from .mailbox import MAX_SENDERS
 from .profiles import Profile, Profiles
+from .tracker import TrackerState
 
 Log = Callable[[str, object], None]
 
@@ -39,8 +40,6 @@ def death_text(who: str, number: int, name: str) -> str:
 
 HELP = """/help            this list
 /status          what was checked and received so far
-/death           test: a DeathLink death arrives
-/doom            test: doom strikes one of your colonies now
 /offline         play without a server: every technology and tradition of your own game, shuffled
 /offline new     the same, with a new shuffle"""
 SERVER_HELP = """!hint <item>     ask the multiworld where one of your items is
@@ -101,6 +100,10 @@ class Session:
     def status(self) -> str:
         return ""
 
+    def tracker_state(self) -> TrackerState:
+        """What the tracker shows of the run."""
+        return TrackerState(checked=set(self.profile.checked) if self.profile else set())
+
     def command(self, text: str) -> None:
         """Something the player typed."""
         verb = text.split()[0].lower() if text.split() else ""
@@ -108,10 +111,6 @@ class Session:
             self.log("info", HELP)
         elif verb == "/status":
             self.log("info", self.status())
-        elif verb == "/death" and self.bridge:
-            self.bridge.receive_death()
-        elif verb == "/doom" and self.bridge:
-            self.bridge.send_doom()
         elif verb:
             self.log("error", f"{verb} is not a command here, see /help")
 
@@ -151,19 +150,12 @@ class OfflineSession(Session):
     def status(self) -> str:
         return f"{len(self.profile.checked)} of {len(self.locations)} locations, {len(self.profile.sent)} items"
 
-    def command(self, text: str) -> None:
-        if text.lower().startswith("/item "):
-            wanted = text[6:].strip().lower()
-            item = next((i for i in self.items.values() if wanted in (str(i["id"]), i["name"].lower())), None)
-            if item is None:
-                self.log("error", f'There is no item "{wanted}"')
-                return
-            self.profile.send(item["id"])
-            self.bridge.set_items(self.sent_items())
-            self.write_start()
-            self.log("item", [("Sending ", "text"), (item["name"], "useful")])
-        else:
-            super().command(text)
+    def tracker_state(self) -> TrackerState:
+        return TrackerState(
+            checked=set(self.profile.checked),
+            holds={location: (self.items[item]["name"], "you", "filler") for location, item in self.placement.items()},
+            received={item for item, _ in self.profile.sent})
+
 
 
 class ServerSession(Session):
@@ -178,6 +170,7 @@ class ServerSession(Session):
         self.events: queue.Queue = queue.Queue()
         self.slot_data: dict = {}
         self.received: list[dict] = []
+        self.scouted: dict = {}
         self.announced = 0
         self.won = False
         self.warned = False
@@ -245,6 +238,7 @@ class ServerSession(Session):
         self.connected = False
 
     def on_scouted(self, found: dict) -> None:
+        self.scouted = found
         build_mod.write_check_names({location: (entry["item"], entry["player"]) for location, entry in found.items()},
                                     players={slot: name for slot, name in self.players.items() if slot <= MAX_SENDERS})
         self.write_start()
@@ -336,6 +330,26 @@ class ServerSession(Session):
         if missing:
             self.log("error", "The multiworld was made with DLC that is not active in your game: "
                               + ", ".join(missing) + ". Items of it will do nothing.")
+
+    def tracker_state(self) -> TrackerState:
+        state = super().tracker_state()
+        state.holds = {location: (entry["item"], entry["player"], item_kind(entry["flags"]))
+                       for location, entry in self.scouted.items()}
+        state.received = {entry["item"] for entry in self.received}
+        goal = self.slot_data.get("goal")
+        if goal == "fragments":
+            fragment = next(item["id"] for item in self.items.values() if item["name"] == data.tables.FRAGMENT)
+            found = sum(entry["item"] == fragment for entry in self.received)
+            state.goal = f"Goal: {found} of {self.slot_data.get('fragments_required', 0)} Precursor Fragments"
+        elif goal == "locations":
+            state.goal = f"Goal: {len(state.checked)} of {self.slot_data.get('locations_required', 0)} locations"
+        elif goal == "crisis":
+            state.goal = "Goal: defeat the endgame crisis"
+        elif goal == "crisis_and_fallen_empires":
+            state.goal = "Goal: defeat the endgame crisis, with no awakened fallen empire left"
+        if self.won:
+            state.goal += " (reached)"
+        return state
 
     def status(self) -> str:
         if self.profile is None:

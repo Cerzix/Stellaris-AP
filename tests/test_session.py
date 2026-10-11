@@ -213,6 +213,26 @@ class ServerSessionTest(unittest.TestCase):
         self.session.stop()
         self.assertEqual(self.starts[-1], (0, [], []), "without a client a new game belongs to no run")
 
+    def test_checks_made_before_the_client_started_are_sent(self):
+        """The game writes its checks to its log, and reports all of them again whenever a save is loaded."""
+        self.log("AP_HELLO")
+        self.log("AP_CHECK 5")
+        self.log("AP_CHECK 1001")
+        later = self.connect()
+        self.connected(later)
+        later.tick()
+        self.assertEqual(later.connection.checked, [5, 1001])
+
+    def test_items_received_while_away_reach_the_game(self):
+        """The server keeps them, and sends all of them to a client that connects."""
+        first, second = data.items()[:2]
+        self.connected()
+        self.server.on_event("items", [{"item": first["id"], "location": 3, "player": 2, "flags": 0},
+                                       {"item": second["id"], "location": 4, "player": 2, "flags": 0}])
+        self.session.tick()
+        self.assertEqual([item["id"] for item in self.session.bridge.items], [first["id"], second["id"]])
+        self.assertIn(("item", "2 items received so far."), self.lines)
+
     def test_goal_fragments(self):
         self.connected()
         fragment = next(item["id"] for item in data.items() if item["name"] == data.tables.FRAGMENT)
@@ -399,8 +419,11 @@ class OfflineSessionTest(unittest.TestCase):
             self.assertEqual(profile.sent, [[found, session.OFFLINE_SLOT]])
             self.assertEqual([item["id"] for item in offline.bridge.items], [found])
             self.assertTrue(any(kind == "check" for kind, _ in lines))
-            offline.command("/item mineral cache")
-            self.assertEqual(profile.sent[-1], [10001, 0])
+            for test_command in ("/item mineral cache", "/death", "/doom"):
+                offline.command(test_command)
+                self.assertEqual(lines[-1][0], "error", "the commands for testing are gone")
+            self.assertEqual(len(profile.sent), 1)
+            self.assertEqual(offline.bridge.deaths, 0)
 
 
 class AppTest(unittest.TestCase):
