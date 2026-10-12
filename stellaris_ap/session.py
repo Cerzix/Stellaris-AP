@@ -62,6 +62,9 @@ class Session:
         # Whether the names of the run are written, which the game needs at its start
         self.ready = False
 
+    def item_id(self, name: str) -> int:
+        return next(item["id"] for item in self.items.values() if item["name"] == name)
+
     def start_bridge(self, deaths_per_doom: int = 3, doom: str = "cracked", death_effect: str = "random",
                      doom_capital: bool = False) -> None:
         self.bridge = Bridge(self.user_dir, self.on_check, delivery=self.delivery, deaths_per_doom=deaths_per_doom,
@@ -207,11 +210,19 @@ class ServerSession(Session):
     # --- what the server reports
 
     def on_connected(self, info: dict) -> None:
+        profile = self.store.server(info["seed"], info["slot"], self.address, self.slot_name)
+        if self.profile is not None and profile.run != self.profile.run:
+            # The address now hosts another multiworld. The bridge belongs to the run it was made for: going on
+            # would feed the checks of that run's saves into this one
+            self.connected = False
+            self.connection.stop()
+            self.log("error", "The server now hosts another multiworld. Press Connect to play that one.")
+            return
         self.connected = True
         self.slot = info["slot"]
         self.players = info["players"]
         self.slot_data = info["slot_data"]
-        self.profile = self.store.server(info["seed"], info["slot"], self.address, self.slot_name)
+        self.profile = profile
         self.log("server", f"Connected. {len(self.players)} player(s) in the multiworld.")
         if self.slot_data.get("death_link") and not self.connection.death_link:
             self.connection.death_link = True
@@ -296,11 +307,17 @@ class ServerSession(Session):
         causes = ["battle" if cause == "fleet" else cause for cause in self.slot_data.get("death_causes", [])]
         if not self.slot_data.get("death_link") or DEATHS[number] not in causes:
             return
-        if self.clock() - self.last_death_sent < DEATH_COOLDOWN_SECONDS:
+        # Not later, if there is no connection right now: see Connection.die
+        if not self.connected or self.clock() - self.last_death_sent < DEATH_COOLDOWN_SECONDS:
             return
         self.last_death_sent = self.clock()
         self.connection.die(death_text(f"{self.slot_name}'s", number, name))
         self.log("death", "DeathLink: sent to the multiworld.")
+
+    def count_received(self, name: str) -> int:
+        """How many of an item of the own game were received."""
+        number = self.item_id(name)
+        return sum(entry["item"] == number for entry in self.received)
 
     def check_goal(self) -> None:
         if self.won or not self.slot_data or self.profile is None:
@@ -312,9 +329,7 @@ class ServerSession(Session):
             # Something in the galaxy, which the game reports
             done = bool(self.bridge) and goal in self.bridge.goals
         else:
-            fragment = next(item["id"] for item in self.items.values() if item["name"] == data.tables.FRAGMENT)
-            found = sum(entry["item"] == fragment for entry in self.received)
-            done = found >= self.slot_data.get("fragments_required", 1)
+            done = self.count_received(data.tables.FRAGMENT) >= self.slot_data.get("fragments_required", 1)
         if done:
             self.won = True
             self.connection.goal()
@@ -341,12 +356,10 @@ class ServerSession(Session):
                                   self.icons.get(entry["item"]) if entry.get("game") == GAME else None)
                        for location, entry in self.scouted.items()}
         state.received = {entry["item"] for entry in self.received}
-        slot = next(item["id"] for item in self.items.values() if item["name"] == data.PROGRESSIVE_ASCENSION)
-        state.perk_slots = sum(entry["item"] == slot for entry in self.received)
+        state.perk_slots = self.count_received(data.PROGRESSIVE_ASCENSION)
         goal = self.slot_data.get("goal")
         if goal == "fragments":
-            fragment = next(item["id"] for item in self.items.values() if item["name"] == data.tables.FRAGMENT)
-            found = sum(entry["item"] == fragment for entry in self.received)
+            found = self.count_received(data.tables.FRAGMENT)
             state.goal = f"Goal: {found} of {self.slot_data.get('fragments_required', 0)} Precursor Fragments"
         elif goal == "locations":
             state.goal = f"Goal: {len(state.checked)} of {self.slot_data.get('locations_required', 0)} locations"

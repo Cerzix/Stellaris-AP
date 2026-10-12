@@ -140,6 +140,8 @@ class Connection:
         self.received: list[dict] = []
         self.loop: asyncio.AbstractEventLoop | None = None
         self.socket = None
+        # Whether the server let the slot in. Before that it takes nothing but the login
+        self.authenticated = False
         self.stopped = False
         self.outbox: list[dict] = []
         self.thread = threading.Thread(target=self.run, daemon=True)
@@ -156,7 +158,7 @@ class Connection:
 
     def send(self, message: dict) -> None:
         """Sends a message, or keeps it until there is a connection again."""
-        if self.loop and self.socket:
+        if self.loop and self.socket and self.authenticated:
             asyncio.run_coroutine_threadsafe(self.deliver(message), self.loop)
         else:
             self.outbox.append(message)
@@ -175,7 +177,7 @@ class Connection:
 
     def die(self, cause: str) -> None:
         """Tells the other players about a death here. Not later, if there is no connection right now."""
-        if self.loop and self.socket:
+        if self.loop and self.socket and self.authenticated:
             self.send({"cmd": "Bounce", "tags": ["DeathLink"],
                        "data": {"time": time.time(), "source": self.slot_name, "cause": cause}})
 
@@ -197,11 +199,15 @@ class Connection:
                     async with websockets.connect(address, max_size=None, open_timeout=10,
                                                   ssl=encryption(address)) as socket:
                         self.socket = socket
+                        # Stopped while it was still connecting, when there was no socket to close
+                        if self.stopped:
+                            return
                         reason = await self.listen(socket)
                     break
                 except (OSError, asyncio.TimeoutError, websockets.exceptions.WebSocketException) as error:
                     failures.append(f"{address.split('://')[0]}: {str(error) or type(error).__name__}")
                 finally:
+                    self.authenticated = False
                     self.socket = None
             # Every way of reaching the server failed: say how, each of them
             reason = reason or "; ".join(failures) or "could not reach the server"
@@ -243,6 +249,7 @@ class Connection:
             return "refused"
         elif command == "Connected":
             self.slot = message["slot"]
+            self.authenticated = True
             self.names.players = {player["slot"]: player["alias"] for player in message["players"]
                                   if player["team"] == message["team"]}
             self.names.games = {int(slot): info["game"] for slot, info in message.get("slot_info", {}).items()}

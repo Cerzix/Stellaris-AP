@@ -88,6 +88,12 @@ ap_report_goals = {
 		limit = { crisis_happened_and_defeated = yes }
 		log = "AP_GOAL 1"
 		set_country_flag = ap_goal_crisis
+		# Once reached it stays reached, also for a client that was not running then: a fallen empire
+		# that awakens later does not take it back
+		if = {
+			limit = { has_country_flag = ap_goal_crisis_fallen }
+			log = "AP_GOAL 2"
+		}
 		if = {
 			limit = { NOT = { any_country = { is_country_type = awakened_fallen_empire } } }
 			log = "AP_GOAL 2"

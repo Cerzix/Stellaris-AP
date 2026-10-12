@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 1.0.0
 
 The first release: Stellaris in an Archipelago multiworld.
 
@@ -42,4 +42,5 @@ The first release: Stellaris in an Archipelago multiworld.
 ### For development
 
 - The tests run on GitHub for every push and pull request.
-- A tag `v*` on master makes a release with a zip of everything needed to play, and the world.
+- A version tag like `1.0.0` on master makes a release with a zip of everything needed to play, and
+  the world.
