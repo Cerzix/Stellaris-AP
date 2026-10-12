@@ -80,17 +80,19 @@ class StellarisWorld(World):
         empire = self.options.empire_type.current_key
         usable = [item for item in content.ITEMS if tables.usable(item, dlcs, empire)]
 
+        # What has to be there comes first: the slots, the goal, every tradition (the trees of the game are
+        # gone, so one that is left out can not be had at all) and every technology that is researched
         names = [tables.PROGRESSIVE_ASCENSION] * tables.ASCENSION_PERK_SLOTS + [tables.FRAGMENT] * self.fragments
-        names += [tables.RANDOM_EVENT] * self.options.random_events.value
-        technologies = [item["name"] for item in usable if item["kind"] == "technology"]
-        # The technologies the game only hands out through events go first if there is no room
-        technologies.sort(key=lambda name: (content.ITEMS_BY_NAME[name]["weight"] == 0, self.random.random()))
-        names += technologies[:room - len(names)]
         if self.options.randomize_traditions:
-            traditions = [item["name"] for item in usable if item["kind"] == "tradition"]
-            self.random.shuffle(traditions)
-            tradition_locations = tables.TREE_SLOTS * tables.TRADITIONS_PER_TREE
-            names += traditions[:min(tradition_locations, room - len(names))]
+            names += [item["name"] for item in usable if item["kind"] == "tradition"]
+        technologies = [item["name"] for item in usable if item["kind"] == "technology"]
+        names += [name for name in technologies if content.ITEMS_BY_NAME[name]["weight"] != 0]
+        # Then the Random Events, and the technologies the game only hands out through events, which it
+        # still does: as far as there is room
+        names += [tables.RANDOM_EVENT] * self.options.random_events.value
+        rare = [name for name in technologies if content.ITEMS_BY_NAME[name]["weight"] == 0]
+        self.random.shuffle(rare)
+        names = (names + rare)[:room]
         while len(names) < room:
             names.append(self.get_filler_item_name())
 

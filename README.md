@@ -92,7 +92,8 @@ its installer) and the zip of a [release](../../releases).
 - `early_progression`: the late game (technologies of tier 4 and 5, tradition trees 5 to 7,
   ascension perks 5 to 8) only holds filler.
 - `random_events`: how many Random Events are mixed in, each of which brings up a random event of
-  Stellaris when it arrives.
+  Stellaris when it arrives. With a large pool there can be fewer than asked for: every tradition
+  and every technology that is researched comes first.
 - DeathLink: `death_link`, what sends a death (`death_on_ruler`, `death_on_leader`,
   `death_on_colony`, `death_on_battle`), what a received death takes (`death_effect`), and the doom
   that destroys a colony after some deaths (`deaths_per_doom`, `doom`, `doom_capital`).

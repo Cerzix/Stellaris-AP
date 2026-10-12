@@ -30,6 +30,9 @@ From the first full test in the game.
 ### Fixed
 
 - The first leader a new game throws away is not a death for everyone.
+- Every tradition the empire can use is in the multiworld. Before, only 49 of them were, picked at
+  random, and the others could not be had at all. Where that leaves no room, Random Events and the
+  technologies the game only hands out through events are the ones left out.
 - The client no longer takes the log Stellaris left behind the last time for a game that is loaded now.
   Without the game running it reported an empire and DLCs of that earlier game, and warned about them.
 - The search of the tracker does not light up a location whose item is hidden.
