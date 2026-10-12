@@ -21,6 +21,9 @@ From the first full test in the game.
 - The option `randomize_traditions`. Turned off, the tradition trees are the ones of the game.
 - The tracker shows how far the goal is on a line of its own, counts the locations to two decimals,
   and has a Refresh button that reads everything again.
+- The tracker names a location after what it holds as soon as it can be researched or picked, as the
+  game does, not only once it is checked. The tradition trees are a block each, side by side, with
+  the adoption at the top and the finish at the bottom.
 - `/status` and the line under the connection show your hint points and what a hint costs, as the
   server counts them.
 

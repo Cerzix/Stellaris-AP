@@ -235,6 +235,34 @@ class StateTest(unittest.TestCase):
         self.assertIn("tech_cruisers", tracker.matches(self.tree, self.state, "Cruisers"))
         self.assertIn("tech_corvettes", tracker.matches(self.tree, hidden, "Corvettes"), "a base technology is no secret")
 
+    def test_what_can_be_researched_or_picked_now_is_named_without_spoilers(self):
+        # Tree 1 is adopted: its first tradition can be picked, the one of tree 2 can not
+        self.state.holds[1002] = ("Hookshot", "Link", "progression", None)
+        self.state.holds[1009] = ("Bombs", "Link", "useful", None)
+        shown = tracker.open_locations(self.tree, data.technologies(), self.state)
+        self.assertIn(1002, shown)
+        self.assertNotIn(1009, shown)
+        self.assertNotIn(self.cruisers.location, shown, "its tier is not open")
+        self.assertNotIn(1001, shown, "checked, which is shown anyway")
+        hidden = self.state.without_spoilers(shown)
+        self.assertEqual(set(hidden.holds), {self.destroyers.location, 1002})
+        self.assertEqual(tracker.name_of(self.tree.nodes["location_1002"], hidden), "Hookshot")
+        self.assertEqual(tracker.name_of(self.tree.nodes["location_1009"], hidden), tracker.UNKNOWN_ITEM)
+
+    def test_a_tradition_tree_is_a_block_from_its_adoption_down_to_its_finish(self):
+        for slot in range(data.TREE_SLOTS):
+            block = [self.tree.nodes[f"location_{data.tradition_location(slot, position)}"]
+                     for position in range(data.TRADITIONS_PER_TREE)]
+            self.assertEqual(len({node.x for node in block}), 1, "one below the other")
+            self.assertEqual([node.y for node in block], sorted(node.y for node in block))
+            self.assertTrue(block[0].label.endswith("Adopted") and block[-1].label.endswith("Finished"))
+            if slot:
+                self.assertGreater(block[0].x, self.tree.nodes[f"location_{data.tradition_location(slot - 1, 0)}"].x)
+        perks = [self.tree.nodes[f"location_{data.PERK_ID_BASE + number}"]
+                 for number in range(1, data.ASCENSION_PERK_SLOTS + 1)]
+        self.assertEqual(len({node.y for node in perks}), 1)
+        self.assertGreater(perks[0].y, self.tree.nodes[f"location_{data.tradition_location(0, 6)}"].y)
+
     def test_search(self):
         self.assertEqual(tracker.matches(self.tree, self.state, "ender pearl"), ["tech_destroyers"], "by what it holds")
         found = tracker.matches(self.tree, self.state, "Destroyer")

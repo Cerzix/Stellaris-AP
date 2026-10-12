@@ -131,10 +131,11 @@ class TrackerState:
         return (self.checked, self.holds, self.received, self.perk_slots, self.goal, self.traditions) == (
             other.checked, other.holds, other.received, other.perk_slots, other.goal, other.traditions)
 
-    def without_spoilers(self) -> "TrackerState":
-        """The same run, knowing only what the locations that are checked held."""
+    def without_spoilers(self, shown=()) -> "TrackerState":
+        """The same run, knowing only what the locations that are checked held, and what the ones in shown
+        hold: the game names those itself, see open_locations."""
         return replace(self.copy(), holds={location: entry for location, entry in self.holds.items()
-                                           if location in self.checked}, hidden=True)
+                                           if location in self.checked or location in shown}, hidden=True)
 
     def copy(self) -> "TrackerState":
         return replace(self, checked=set(self.checked), holds=dict(self.holds), received=set(self.received),
@@ -175,26 +176,31 @@ def build_tree(technologies: list[dict], locations: list[dict], collapsed=(), tr
     y = MARGIN
     width = MARGIN + (data.ASCENSION_PERK_SLOTS - 1) * COLUMN + NODE_WIDTH
 
-    # The locations that are not technologies: a row for every tradition tree, and one for the ascension perks
+    # The locations that are not technologies. A block for every tradition tree, one next to the other: its
+    # adoption at the top, its traditions below that and its finish at the bottom. Under them a row for the
+    # ascension perks
     band = Band(PICKS, BAND_NAMES[PICKS], y, PICKS in collapsed, [])
     bands.append(band)
     y += BAND_TITLE
-    rows: dict[int, list[dict]] = {}
-    for location in locations:
+    traditions = sorted((location for location in locations if location["kind"] == "tradition"),
+                        key=lambda location: (location["slot"], location["position"]))
+    perks = sorted((location for location in locations if location["kind"] == "perk"),
+                   key=lambda location: location["number"])
+    below = max((location["position"] + 1 for location in traditions), default=0) * ROW
+    if traditions and perks:
+        below += ROW / 2
+    for location in traditions + perks:
         if location["kind"] == "tradition":
-            rows.setdefault(location["slot"], []).append(location)
-        elif location["kind"] == "perk":
-            rows.setdefault(data.TREE_SLOTS, []).append(location)
-    for row in sorted(rows):
-        for index, location in enumerate(rows[row]):
-            key = f"location_{location['id']}"
-            # "Tradition Tree 1: Tradition 2" says tradition once too often for a small box
-            nodes[key] = Node(key, location["name"].removeprefix("Tradition "), "pick", PICKS,
-                              MARGIN + index * COLUMN, y,
-                              hidden=band.collapsed, location=location["id"], pick=location)
-            band.nodes.append(key)
-        if not band.collapsed:
-            y += ROW
+            place = MARGIN + location["slot"] * COLUMN, y + location["position"] * ROW
+        else:
+            place = MARGIN + (location["number"] - 1) * COLUMN, y + below
+        key = f"location_{location['id']}"
+        # "Tradition Tree 1: Tradition 2" says tradition once too often for a small box
+        nodes[key] = Node(key, location["name"].removeprefix("Tradition "), "pick", PICKS, *place,
+                          hidden=band.collapsed, location=location["id"], pick=location)
+        band.nodes.append(key)
+    if not band.collapsed:
+        y += below + (ROW if perks else 0)
 
     # The traditions that arrive as items: a row for every tree they come from
     if trees:
@@ -290,6 +296,14 @@ def status(node: Node, state: TrackerState, counts: dict) -> str:
     else:
         needed = [data.tradition_location(pick["slot"] - 1, 0)] if pick["slot"] else []
     return "available" if all(location in state.checked for location in needed) else "locked"
+
+
+def open_locations(tree: Tree, technologies: list[dict], state: TrackerState) -> set[int]:
+    """The locations that can be researched or picked now. What they hold is no secret: the game names the
+    technology after it, and says it in the tooltip of the tradition."""
+    counts = researched(technologies, state)
+    return {node.location for node in tree.nodes.values()
+            if node.location is not None and status(node, state, counts) == "available"}
 
 
 def fits(node: Node, state: TrackerState, counts: dict, name: str) -> bool:
@@ -397,7 +411,8 @@ def describe(node: Node, state: TrackerState, counts: dict, names: dict[str, str
             item, player, kind, _ = held(state, node.location)
             parts += [("Holds ", "dim"), (item, kind), (" for ", "dim"), (player + "\n", "player")]
         else:
-            parts.append(("What it holds is hidden. Spoilers at the top shows it.\n" if state.hidden
+            parts.append(("What it holds is hidden until it can be researched or picked. Spoilers at the top "
+                          "shows it.\n" if state.hidden
                           else "What it holds is not known yet.\n", "dim"))
     if node.item is not None:
         got = node.item in state.received
@@ -840,8 +855,8 @@ class TrackerWindow:
                                     "it shown.\n\nA line leads from a technology to the ones that follow it in the "
                                     "game. In this run a technology is a location: researching it sends what it "
                                     "holds, and the technology itself arrives as an item. A box is called "
-                                    "after what it held once it is checked. Spoilers at the top shows what "
-                                    "every box holds before that.\n\nType in Find to light up what matches, and press Enter to go from one to "
+                                    "after what it holds once it can be researched or picked, as it is in the "
+                                    "game. Spoilers at the top shows what every box holds before that.\n\nType in Find to light up what matches, and press Enter to go from one to "
                                     "the next. Click a heading to fold its part of the tree away, and one of "
                                     "the kinds at the top to show only those.\n\nDrag to move, use the wheel to "
                                     "zoom, double click to zoom in on a technology, and press Esc to clear "
@@ -859,7 +874,7 @@ class TrackerWindow:
         try:
             state = self.state_of_run()
             if not self.settings.spoilers:
-                state = state.without_spoilers()
+                state = state.without_spoilers(open_locations(self.tree, self.technologies, state))
             if not state.same(self.state) or state.hidden != self.state.hidden:
                 hidden = state.hidden
                 relaid = state.traditions != self.state.traditions
