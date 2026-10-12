@@ -46,7 +46,9 @@ its installer) and the zip of a [release](../../releases).
    the wheel to zoom, click a technology to keep it shown, and type in Find to light up what
    matches. The kinds at the top filter the tree, a click on a heading folds its part away, and the
    sun switches between the dark and the light theme. What a location holds is hidden until you
-   have checked it, unless you turn on "Spoilers".
+   have checked it, unless you turn on "Spoilers". The traditions you have received are listed
+   under "Archipelago Traditions": the game has no place to show them. "Refresh" reads everything
+   again if something looks wrong.
 6. If you lose, start a new game while connected to the same slot: it starts with everything the
    multiworld has given you so far.
 
@@ -64,8 +66,10 @@ its installer) and the zip of a [release](../../releases).
   tooltip that says what it sends. The 49 locations are told apart by the order in which the
   trees were adopted and the place of the tradition in its tree, so they can all be reached
   whichever trees the player picks. The real traditions arrive as items (not the adoption and
-  finish bonuses). The trees of the ascension paths keep their traditions, and count as one of
-  the 7 trees.
+  finish bonuses) and work from then on, whichever trees are adopted; the tracker lists them. The
+  trees of the ascension paths keep their traditions, and count as one of the 7 trees.
+- A Random Event brings up one of the random events of the game itself, from the lists the game
+  draws from on its own (`mod/archipelago/common/on_actions/ap_random_events.txt`).
 - Ascension perk slots only come from the item "Progressive Ascension". Picking a perk is a location.
 - `mod/archipelago` is the Stellaris mod. Researching a location writes `AP_CHECK <n>` to
   `game.log`, which the client reads.
@@ -83,9 +87,12 @@ its installer) and the zip of a [release](../../releases).
   empire left.
 - `owned_dlc`, `empire_type`: technologies and traditions the player cannot use stay out of the
   multiworld. The locations are the same for everyone.
+- `randomize_traditions`: turned off, the tradition trees are the ones of the game and have nothing
+  to do with the multiworld.
 - `early_progression`: the late game (technologies of tier 4 and 5, tradition trees 5 to 7,
   ascension perks 5 to 8) only holds filler.
-- `random_events`: how many Random Events are mixed in, which do something good or bad on arrival.
+- `random_events`: how many Random Events are mixed in, each of which brings up a random event of
+  Stellaris when it arrives.
 - DeathLink: `death_link`, what sends a death (`death_on_ruler`, `death_on_leader`,
   `death_on_colony`, `death_on_battle`), what a received death takes (`death_effect`), and the doom
   that destroys a colony after some deaths (`deaths_per_doom`, `doom`, `doom_capital`).

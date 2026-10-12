@@ -61,6 +61,14 @@ class EmpireType(Choice):
     default = 0
 
 
+class RandomizeTraditions(DefaultOnToggle):
+    """Whether the traditions are shuffled into the multiworld. If they are, every tradition you adopt is a
+    location, and the real traditions arrive as items and work whichever trees you have adopted.
+    If they are not, the tradition trees are the ones of the game and have nothing to do with the multiworld.
+    Ascension perk slots come from Progressive Ascension either way."""
+    display_name = "Randomize Traditions"
+
+
 class EarlyProgression(DefaultOnToggle):
     """Keeps everything a player needs to win out of your late game: technologies of tier 4 and 5,
     the fifth to seventh tradition tree and the fifth to eighth ascension perk only hold filler."""
@@ -68,8 +76,9 @@ class EarlyProgression(DefaultOnToggle):
 
 
 class RandomEvents(Range):
-    """How many Random Events are mixed into the multiworld. When one arrives something happens to your empire,
-    good or bad: a windfall, a breakthrough, a market crash, unrest, a lost fleet..."""
+    """How many Random Events are mixed into the multiworld. When one arrives, one of the random events of
+    Stellaris itself comes up: the kind the game otherwise brings up on a colony or in an empire every few
+    years, good or bad."""
     display_name = "Random Events"
     range_start = 0
     range_end = 50
@@ -149,6 +158,7 @@ class StellarisOptions(PerGameCommonOptions):
     locations_required: LocationsRequired
     owned_dlc: OwnedDLC
     empire_type: EmpireType
+    randomize_traditions: RandomizeTraditions
     early_progression: EarlyProgression
     death_link: DeathLink
     random_events: RandomEvents

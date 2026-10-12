@@ -14,7 +14,7 @@ tradition_logistics = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
 		is_gestalt = yes
 	}
 
@@ -35,7 +35,7 @@ tradition_logistics = {
 	}
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_logistics = {
 	tree_template = "tree_11_12"
 	adoption_bonus = "tr_logistics_adopt"
@@ -49,7 +49,7 @@ tradition_ap_real_logistics = {
 	}
 
 	potential = {
-		has_country_flag = ap_ai
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
 		is_gestalt = yes
 	}
 

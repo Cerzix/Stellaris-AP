@@ -62,6 +62,8 @@ class App:
         self.requests: queue.Queue = queue.Queue()
         self.lines: queue.Queue = queue.Queue()
         self.closing = False
+        # Another client was started and took over: this window goes away
+        self.replaced = False
         self.tracker: TrackerWindow | None = None
         self.settings = settings or Settings()
         self.last_tracker_state = TrackerState()
@@ -167,7 +169,8 @@ class App:
             self.tracker.window.lift()
             self.tracker.window.focus_force()
             return
-        self.tracker = TrackerWindow(self.window, self.tracker_state, self.settings)
+        self.tracker = TrackerWindow(self.window, self.tracker_state, self.settings,
+                                     resync=lambda: self.requests.put(("resync",)))
 
     def tracker_state(self) -> TrackerState:
         session = self.session
@@ -187,6 +190,9 @@ class App:
     def refresh(self) -> None:
         """Shows what the other thread reported."""
         if self.closing:
+            return
+        if self.replaced:
+            self.close()
             return
         added = False
         while True:
@@ -253,6 +259,7 @@ class App:
                 # The new client waits for the port to be free
                 self.lock.close()
                 self.lock = None
+                self.replaced = True
                 return
 
     def replace_session(self, session: Session | None) -> None:
@@ -278,6 +285,9 @@ class App:
             self.replace_session(None)
             self.replace_session(ServerSession(self.user_dir, self.log, self.store, address, slot, password,
                                                delivery=self.delivery))
+        elif request[0] == "resync":
+            if self.session:
+                self.session.resync()
         elif request[0] == "offline":
             self.offline(new=True)
         return True

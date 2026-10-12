@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.1.0
+
+From the first full test in the game.
+
+### Changed
+
+- Random Events are events of Stellaris itself now, not ones made up for this: the kind the game
+  brings up on a colony that is a few years old, or in an empire every few years. Which one comes up
+  is up to the game, and it brings its own message. In a new game of a run they are played again one
+  after the other over the first years, each with its own message, instead of all at once.
+- A tradition received as an item no longer leaves its tree in the tradition window, where it took
+  the place of a tree to adopt. The traditions you have received are listed in the tracker, under
+  "Archipelago Traditions". Whether the game lets a tree be taken away like this is not tested yet:
+  the client's log says which it was, the first time a tradition arrives.
+- A death from the multiworld takes the ruler if no other leader is left.
+
+### Added
+
+- The option `randomize_traditions`. Turned off, the tradition trees are the ones of the game.
+- The tracker shows how far the goal is on a line of its own, counts the locations to two decimals,
+  and has a Refresh button that reads everything again.
+- `/status` and the line under the connection show your hint points and what a hint costs, as the
+  server counts them.
+
+### Fixed
+
+- The first leader a new game throws away is not a death for everyone.
+- The search of the tracker does not light up a location whose item is hidden.
+- When the client is started a second time, the window of the first one closes.
+
 ## 1.0.0
 
 The first release: Stellaris in an Archipelago multiworld.

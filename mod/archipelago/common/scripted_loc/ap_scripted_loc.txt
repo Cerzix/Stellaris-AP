@@ -969,20 +969,3 @@ defined_text = {
 	text = { trigger = { check_variable = { which = ap_death_effect value = 3 } } localization_key = ap_death_effect_3 }
 	default = ap_death_effect_0
 }
-
-# Scope: country
-defined_text = {
-	name = GetAPEvent
-	random = no
-	text = { trigger = { check_variable = { which = ap_event_kind value = 1 } } localization_key = ap_event_1 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 2 } } localization_key = ap_event_2 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 3 } } localization_key = ap_event_3 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 4 } } localization_key = ap_event_4 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 5 } } localization_key = ap_event_5 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 6 } } localization_key = ap_event_6 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 7 } } localization_key = ap_event_7 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 8 } } localization_key = ap_event_8 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 9 } } localization_key = ap_event_9 }
-	text = { trigger = { check_variable = { which = ap_event_kind value = 10 } } localization_key = ap_event_10 }
-	default = ap_event_0
-}

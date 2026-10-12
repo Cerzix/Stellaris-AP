@@ -14,7 +14,7 @@ tradition_adaptability = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
 		is_machine_empire = no
 	}
 
@@ -47,7 +47,7 @@ tradition_adaptability = {
 	}
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_adaptability = {
 	tree_template = "tree_11_12"
 	adoption_bonus = "tr_adaptability_adopt"
@@ -61,7 +61,7 @@ tradition_ap_real_adaptability = {
 	}
 
 	potential = {
-		has_country_flag = ap_ai
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
 		is_machine_empire = no
 	}
 

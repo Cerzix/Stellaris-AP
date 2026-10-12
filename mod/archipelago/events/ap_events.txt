@@ -136,29 +136,14 @@ country_event = {
 	}
 }
 
-# The item Random Event, fired by ap_random_event
+# A Random Event of the run, played again some time into a new game. Fired by ap_start_run
 country_event = {
-	id = ap.21
-	title = ap.21.name
-	desc = ap.21.desc
-	picture = GFX_evt_cargoship_caravan
+	id = ap.23
+	hide_window = yes
 	is_triggered_only = yes
 
-	option = {
-		name = ap.21.a
-	}
-}
-
-# A new game of a run: its random events have been played again, fired by ap_start_run
-country_event = {
-	id = ap.22
-	title = ap.21.name
-	desc = ap.22.desc
-	picture = GFX_evt_cargoship_caravan
-	is_triggered_only = yes
-
-	option = {
-		name = ap.21.a
+	immediate = {
+		ap_random_event = yes
 	}
 }
 

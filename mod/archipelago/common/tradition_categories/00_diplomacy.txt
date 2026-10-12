@@ -14,7 +14,7 @@ tradition_diplomacy = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
 		NOR = {
 			has_valid_civic = civic_inwards_perfection
 			has_valid_civic = civic_hive_devouring_swarm
@@ -58,7 +58,7 @@ tradition_diplomacy = {
 	}
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_diplomacy = {
 	tree_template = "tree_11_12"
 	adoption_bonus = "tr_diplomacy_adopt"
@@ -72,7 +72,7 @@ tradition_ap_real_diplomacy = {
 	}
 
 	potential = {
-		has_country_flag = ap_ai
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
 		NOR = {
 			has_valid_civic = civic_inwards_perfection
 			has_valid_civic = civic_hive_devouring_swarm

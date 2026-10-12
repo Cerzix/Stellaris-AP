@@ -312,6 +312,15 @@ class BridgeTest(unittest.TestCase):
         bridge.tick()
         self.assertEqual(deaths, [(1, "High King Zog"), (4, "")], "a name the game did not fill in is left out")
 
+    def test_what_the_mod_found_out_is_said(self):
+        said = []
+        bridge = Bridge(self.user_dir, self.checks.append, delivery="manual", say=said.append)
+        bridge.tick()
+        self.log("AP_NOTE 1")
+        self.log("AP_NOTE 9")
+        bridge.tick()
+        self.assertEqual([text for text in said if "tradition" in text], [bridge_module.NOTES[1]])
+
     def test_loading_a_save_reapplies_items(self):
         self.bridge.set_items([ENERGY])
         self.log("AP_HELLO")
