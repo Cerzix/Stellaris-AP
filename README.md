@@ -102,3 +102,8 @@ its installer) and the zip of a [release](../../releases).
   `python tools/try_server.py <address> <slot>` plays a few checks against a server without the game.
 - A version tag like `1.0.0` on master makes a release: the zip with everything needed to play, and
   the world.
+
+## License
+
+[MIT](LICENSE). Stellaris and its technologies, icons and names belong to Paradox Interactive; none of
+the game's files are part of this project.
