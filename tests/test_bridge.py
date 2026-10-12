@@ -215,6 +215,7 @@ class BridgeTest(unittest.TestCase):
     def test_game_reports_its_dlcs_and_empire(self):
         said = []
         bridge = Bridge(self.user_dir, self.checks.append, delivery="manual", say=said.append)
+        bridge.tick()
         self.log("AP_HELLO")
         self.log("AP_DLC 2")
         self.log("AP_DLC 5")
@@ -311,6 +312,35 @@ class BridgeTest(unittest.TestCase):
         self.log("AP_DEATH 9 Nobody")
         bridge.tick()
         self.assertEqual(deaths, [(1, "High King Zog"), (4, "")], "a name the game did not fill in is left out")
+
+    def test_the_log_of_a_game_that_is_closed_is_left_out(self):
+        said = []
+        self.log("AP_HELLO")
+        self.log("AP_EMPIRE 2")
+        self.log("AP_CHECK 5")
+        bridge = Bridge(self.user_dir, self.checks.append, delivery="manual", say=said.append,
+                        game_running=lambda: False)
+        bridge.tick()
+        self.assertEqual((bridge.in_game, bridge.game_empire, self.checks, said), (False, None, [], []))
+        # The game is started: it writes a new log, which can be longer than the old one by the time it is read
+        (self.user_dir / "logs" / "game.log").write_text(
+            "[10:00:00] started\n" + "x" * 200 + "\nAP_HELLO\nAP_EMPIRE 1\n", encoding="utf-8")
+        bridge.tick()
+        self.assertEqual((bridge.in_game, bridge.game_empire), (True, "regular"))
+        self.assertIn("Stellaris: game loaded", said)
+
+    def test_the_log_of_a_running_game_is_read_and_summed_up(self):
+        said = []
+        self.log("AP_HELLO")
+        self.log("AP_EMPIRE 1")
+        self.log("AP_HELLO")
+        self.log("AP_EMPIRE 2")
+        self.log("AP_CHECK 5")
+        bridge = Bridge(self.user_dir, self.checks.append, delivery="manual", say=said.append,
+                        game_running=lambda: True)
+        bridge.tick()
+        self.assertEqual((bridge.in_game, bridge.game_empire, self.checks), (True, "hive", [5]))
+        self.assertEqual(said, ["Stellaris: a game is already loaded, a hive empire"])
 
     def test_what_the_mod_found_out_is_said(self):
         said = []
