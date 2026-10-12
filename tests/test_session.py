@@ -254,6 +254,19 @@ class ServerSessionTest(unittest.TestCase):
         self.session.tick()
         self.assertTrue(self.server.won)
 
+    def test_another_multiworld_at_the_same_address_is_refused(self):
+        self.connected()
+        run = self.session.profile.run
+        stopped = []
+        self.server.stop = lambda: stopped.append(True)
+        self.server.on_event("connected", {"seed": "OTHER", "slot": 1, "team": 0, "players": {1: "Cerzix"},
+                                           "checked": [], "slot_data": {}})
+        self.session.tick()
+        self.assertEqual(self.session.profile.run, run, "the run that is played stays")
+        self.assertEqual(stopped, [True])
+        self.assertEqual(self.lines[-1][0], "error")
+        self.assertFalse(self.session.connected)
+
     def test_goal_crisis(self):
         self.connected(goal="crisis")
         self.log("AP_HELLO")

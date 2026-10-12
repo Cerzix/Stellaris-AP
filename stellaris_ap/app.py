@@ -250,6 +250,9 @@ class App:
             if self.lock is not None and asked_to_quit(self.lock):
                 self.log("error", "Another client was started, this one stops.")
                 self.replace_session(None)
+                # The new client waits for the port to be free
+                self.lock.close()
+                self.lock = None
                 return
 
     def replace_session(self, session: Session | None) -> None:

@@ -25,11 +25,9 @@ from .mailbox import DOOM_CODES
 from .memory import stellaris_pid
 from .paths import REPO, RUN_FILE_NAME, WRITE_BLOCKED_HINT, stellaris_user_dir
 from .profiles import Profile, Profiles
-from .session import MENU_DEATH, MENU_DOOM
+from .session import MENU_DEATH, MENU_DOOM, OFFLINE_SLOT
 
 LOG_FILE = REPO / "client.log"
-# The player's slot in a run without a server
-OFFLINE_SLOT = 1
 OFFLINE_HELP = """Commands:
   item <id or name>   send an extra item to the game
   sent                list the items sent so far
@@ -214,6 +212,8 @@ def pick_profile(args, store: Profiles) -> Profile:
         profile = store.get(args.run)
         if profile is None:
             sys.exit(f"There is no run {args.run}")
+        if profile.state["kind"] != "offline":
+            sys.exit(f"Run {args.run} is a slot of a multiworld, which only the window of the client can play")
         return profile
     offline = [profile for profile in store.all() if profile.state["kind"] == "offline"]
     return store.new_offline() if args.new or not offline else offline[0]

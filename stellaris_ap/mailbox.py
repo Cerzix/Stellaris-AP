@@ -111,7 +111,9 @@ class Mailbox:
         self.next_scan = 0.0
         self.waiting_since: float | None = None
         # A signal about the save that was loaded before means nothing to this one
-        self.signals = [signal for signal in self.signals if signal != WRONG_RUN and signal < BIND_RUN]
+        # (WRONG_RUN and the run it was given). Dooms and deaths are still owed to the game
+        self.signals = [signal for signal in self.signals
+                        if signal != WRONG_RUN and not BIND_RUN <= signal < DEATH_NOTICE]
 
     def poll(self, item_ids: list[int]) -> None:
         """Takes all items received so far, as item_value(), and writes the next one the save needs."""
