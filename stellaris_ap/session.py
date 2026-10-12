@@ -62,6 +62,8 @@ class Session:
         self.locations = {location["id"]: location["name"] for location in data.locations()}
         # Whether the traditions are shuffled. If not, the player has the trees of the game
         self.shuffled_traditions = True
+        # The ids of the traditions that are items of the run, None if that is not known
+        self.tradition_pool: frozenset | None = None
         # Whether the names of the run are written, which the game needs at its start
         self.ready = False
 
@@ -235,6 +237,14 @@ class ServerSession(Session):
         self.profile = profile
         # A multiworld made before this was an option has them shuffled
         self.shuffled_traditions = bool(self.slot_data.get("randomize_traditions", True))
+        # The traditions that are items of the multiworld. One made before it said so has some of the ones
+        # the empire can use, and does not tell which
+        pool = self.slot_data.get("tradition_items")
+        if pool is None:
+            dlcs, empire = self.slot_data.get("owned_dlc", []), self.slot_data.get("empire_type", "regular")
+            pool = [item["id"] for item in data.items()
+                    if item["kind"] == "tradition" and data.tables.usable(item, dlcs, empire)]
+        self.tradition_pool = frozenset(pool)
         if not self.shuffled_traditions:
             self.locations = {location["id"]: location["name"] for location in data.locations()
                               if location["kind"] != "tradition"}
@@ -380,6 +390,7 @@ class ServerSession(Session):
                                   self.icons.get(entry["item"]) if entry.get("game") == GAME else None)
                        for location, entry in self.scouted.items()}
         state.received = {entry["item"] for entry in self.received}
+        state.pool = self.tradition_pool
         state.perk_slots = self.count_received(data.PROGRESSIVE_ASCENSION)
         goal = self.slot_data.get("goal")
         if goal == "fragments":

@@ -22,6 +22,9 @@ PICKS = "picks"
 # The traditions that arrive as items. The game has no place to list them: they work without their tree
 TRADITIONS = "traditions"
 BAND_NAMES = {PICKS: "Traditions and ascension perks", TRADITIONS: "Archipelago Traditions", **AREA_NAMES}
+# The tabs of the window: every part of the tree on its own, and all of them at once
+EVERYTHING = "all"
+TABS = {PICKS: "Traditions and perks", TRADITIONS: "Archipelago Traditions", **AREA_NAMES, EVERYTHING: "Everything"}
 # previously_unlocked in the game's common/technology/tier: so many technologies of a tier have to be
 # researched in an area before the next tier comes up there
 TIER_NEEDS = 6
@@ -126,10 +129,13 @@ class TrackerState:
     hidden: bool = False
     # Whether the traditions are shuffled. If not, they are neither locations nor items
     traditions: bool = True
+    # The ids of the traditions that are items of the multiworld, None if that is not known. The others are
+    # not listed: the empire can not use them, so they are nowhere to be found
+    pool: frozenset | None = None
 
     def same(self, other: "TrackerState") -> bool:
-        return (self.checked, self.holds, self.received, self.perk_slots, self.goal, self.traditions) == (
-            other.checked, other.holds, other.received, other.perk_slots, other.goal, other.traditions)
+        return (self.checked, self.holds, self.received, self.perk_slots, self.goal, self.traditions, self.pool) == (
+            other.checked, other.holds, other.received, other.perk_slots, other.goal, other.traditions, other.pool)
 
     def without_spoilers(self, shown=()) -> "TrackerState":
         """The same run, knowing only what the locations that are checked held, and what the ones in shown
@@ -168,9 +174,12 @@ def columns(technologies: list[dict]) -> dict[str, int]:
     return column
 
 
-def build_tree(technologies: list[dict], locations: list[dict], collapsed=(), trees=()) -> Tree:
+def build_tree(technologies: list[dict], locations: list[dict], collapsed=(), trees=(), pool=None,
+               only: str | None = None) -> Tree:
     """Lays out the tree. collapsed: the keys of the bands that only show their title.
-    locations: the locations of the run. trees: the tradition trees whose traditions arrive as items."""
+    locations: the locations of the run. trees: the tradition trees whose traditions arrive as items.
+    pool: the ids of the traditions that are in the multiworld, None for all of them.
+    only: the key of the one band to lay out. The others are still in the tree, but hidden."""
     nodes: dict[str, Node] = {}
     bands = []
     y = MARGIN
@@ -209,7 +218,8 @@ def build_tree(technologies: list[dict], locations: list[dict], collapsed=(), tr
         bands.append(band)
         y += BAND_TITLE
         for tree in trees:
-            items = [tradition for tradition in tree["traditions"] if "id" in tradition]
+            items = [tradition for tradition in tree["traditions"]
+                     if "id" in tradition and (pool is None or tradition["id"] in pool)]
             for index, tradition in enumerate(items):
                 key = f"tradition_{tradition['id']}"
                 nodes[key] = Node(key, tradition["name"], "tradition", TRADITIONS, MARGIN + index * COLUMN, y,
@@ -259,7 +269,21 @@ def build_tree(technologies: list[dict], locations: list[dict], collapsed=(), tr
                 width = max(width, MARGIN + number * COLUMN + NODE_WIDTH)
         if not band.collapsed:
             y += tallest * ROW
-    return Tree(nodes, bands, width + MARGIN, y + MARGIN)
+    alone = next((band for band in bands if band.key == only), None)
+    if alone is None:
+        return Tree(nodes, bands, width + MARGIN, y + MARGIN)
+    # Only this band, moved up to where the first one was
+    up = alone.y - MARGIN
+    alone.y = MARGIN
+    width, height = MARGIN + NODE_WIDTH, MARGIN + BAND_TITLE
+    for node in nodes.values():
+        if node.band != only:
+            node.hidden = True
+        else:
+            node.y -= up
+            if not node.hidden:
+                width, height = max(width, node.x + NODE_WIDTH), max(height, node.y + NODE_HEIGHT)
+    return Tree(nodes, [alone], width + MARGIN, height + MARGIN)
 
 
 def researched(technologies: list[dict], state: TrackerState) -> dict[tuple[str, int], int]:
@@ -551,6 +575,16 @@ class TrackerWindow:
         # How far the goal is: a line of its own, which is only there if the run has something to count
         self.goal = tkinter.Label(self.window, anchor="w", padx=10, pady=3, font=("Segoe UI", 10, "bold"))
 
+        # One part of the tree at a time: all of it at once is slow to move around
+        self.tabs = tkinter.Frame(self.window, padx=10, pady=2)
+        self.tabs.pack(fill="x")
+        self.tab: dict[str, tkinter.Label] = {}
+        for key, text in TABS.items():
+            label = tkinter.Label(self.tabs, text=text, cursor="hand2", padx=10, pady=4)
+            label.bind("<Button-1>", lambda event, key=key: self.set_tab(key))
+            self.tab[key] = label
+        self.place_tabs()
+
         self.chips = tkinter.Frame(self.window, padx=10, pady=4)
         self.chips.pack(fill="x")
         self.found_label = tkinter.Label(self.chips, width=10, anchor="w")
@@ -601,8 +635,9 @@ class TrackerWindow:
     def apply_theme(self) -> None:
         """Colours the window after the theme and the colours the player picked, and draws the tree again."""
         bar, text, dim = self.colour("bar"), self.colour("text"), self.colour("dim")
-        for frame in (self.bar, self.chips):
+        for frame in (self.bar, self.chips, self.tabs):
             frame.configure(background=bar)
+        self.colour_tabs()
         for label in (self.summary, self.find_label, self.found_label):
             label.configure(background=bar, foreground=text)
         self.goal.configure(background=bar, foreground=self.colour("available"))
@@ -667,6 +702,41 @@ class TrackerWindow:
             label.configure(background=bar, foreground=self.colour("text" if active or not self.filter else "dim"),
                             font=("Segoe UI", 9, "bold underline" if active else "normal"))
 
+    def shown_tab(self) -> str:
+        """The tab that is shown: the one that was picked, if the run has it."""
+        tab = self.settings.tab
+        return tab if tab in TABS and (tab != TRADITIONS or self.state.traditions) else PICKS
+
+    def place_tabs(self) -> None:
+        """Puts the tabs in their row, without the one of the traditions if they are not shuffled."""
+        for key, label in self.tab.items():
+            label.pack_forget()
+            if key != TRADITIONS or self.state.traditions:
+                label.pack(side="left", padx=(0, 2))
+
+    def colour_tabs(self) -> None:
+        for key, label in self.tab.items():
+            active = key == self.shown_tab()
+            label.configure(background=self.colour("node" if active else "bar"),
+                            foreground=self.colour("text" if active else "dim"),
+                            font=("Segoe UI", 10, "bold" if active else "normal"))
+
+    def set_tab(self, tab: str) -> None:
+        """Shows another part of the tree, from its top left."""
+        if tab == self.shown_tab():
+            return
+        self.settings.tab = tab
+        self.settings.save()
+        self.build_tree()
+        if self.pinned and self.tree.nodes[self.pinned].hidden:
+            self.pinned = self.shown = None
+        self.colour_tabs()
+        self.draw()
+        self.show(self.shown)
+        left, top, right, bottom = (float(value) for value in str(self.canvas.cget("scrollregion")).split())
+        self.canvas.xview_moveto(-left / (right - left))
+        self.canvas.yview_moveto(-top / (bottom - top))
+
     def label_spoilers(self) -> None:
         self.spoiler_button.configure(text="Spoilers: on" if self.settings.spoilers else "Spoilers: off")
 
@@ -725,8 +795,10 @@ class TrackerWindow:
         """Lays the tree out for the run as it is: without the traditions if they are not shuffled."""
         shuffled = self.state.traditions
         self.locations = [location for location in data.locations() if shuffled or location["kind"] != "tradition"]
+        tab = self.shown_tab()
         self.tree = build_tree(self.technologies, self.locations, self.settings.collapsed,
-                               data.normal_trees() if shuffled else ())
+                               data.normal_trees() if shuffled else (), self.state.pool,
+                               None if tab == EVERYTHING else tab)
         self.names = {key: node.label for key, node in self.tree.nodes.items()}
 
     def rebuild(self) -> None:
@@ -857,8 +929,9 @@ class TrackerWindow:
                                     "holds, and the technology itself arrives as an item. A box is called "
                                     "after what it holds once it can be researched or picked, as it is in the "
                                     "game. Spoilers at the top shows what every box holds before that.\n\nType in Find to light up what matches, and press Enter to go from one to "
-                                    "the next. Click a heading to fold its part of the tree away, and one of "
-                                    "the kinds at the top to show only those.\n\nDrag to move, use the wheel to "
+                                    "the next. The tabs at the top show one part of the tree at a time, which is faster "
+                                    "than Everything. Click a heading to fold its part of the tree away, and one "
+                                    "of the kinds at the top to show only those.\n\nDrag to move, use the wheel to "
                                     "zoom, double click to zoom in on a technology, and press Esc to clear "
                                     "everything.", "dim")
         else:
@@ -877,12 +950,14 @@ class TrackerWindow:
                 state = state.without_spoilers(open_locations(self.tree, self.technologies, state))
             if not state.same(self.state) or state.hidden != self.state.hidden:
                 hidden = state.hidden
-                relaid = state.traditions != self.state.traditions
+                relaid = (state.traditions, state.pool) != (self.state.traditions, self.state.pool)
                 self.state = state.copy()
                 self.state.hidden = hidden
                 self.counts = researched(self.technologies, self.state)
                 if relaid:
                     self.build_tree()
+                    self.place_tabs()
+                    self.colour_tabs()
                     if self.pinned not in self.tree.nodes or self.shown not in self.tree.nodes:
                         self.pinned = self.shown = None
                 self.found = matches(self.tree, self.state, self.search.get())
@@ -983,10 +1058,15 @@ class TrackerWindow:
         self.paint()
 
     def search_next(self) -> None:
-        """Enter: goes to the next match that is on the tree."""
-        visible = [key for key in self.found if not self.tree.nodes[key].hidden]
+        """Enter: goes to the next match, in the tab it is in. Not to one in a part that is folded away."""
+        tab = self.shown_tab()
+        visible = [key for key in self.found if self.tree.nodes[key].band not in self.settings.collapsed]
+        # The ones of the tab that is shown first
+        visible.sort(key=lambda key: tab != EVERYTHING and self.tree.nodes[key].band != tab)
         if visible:
             key = visible[(visible.index(self.pinned) + 1) % len(visible)] if self.pinned in visible else visible[0]
+            if self.tree.nodes[key].hidden:
+                self.set_tab(self.tree.nodes[key].band)
             node = self.tree.nodes[key]
             self.centre((node.x + NODE_WIDTH / 2, node.y + NODE_HEIGHT / 2), max(self.zoom, 0.8))
             self.pin(key)

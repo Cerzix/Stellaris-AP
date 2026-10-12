@@ -24,6 +24,9 @@ From the first full test in the game.
 - The tracker names a location after what it holds as soon as it can be researched or picked, as the
   game does, not only once it is checked. The tradition trees are a block each, side by side, with
   the adoption at the top and the finish at the bottom.
+- The tracker has tabs: the traditions and perks, the received traditions and each area of research
+  on their own, which is much faster to move around than everything at once. The search goes to the
+  tab of what it found. Only the traditions that are in the multiworld are listed.
 - `/status` and the line under the connection show your hint points and what a hint costs, as the
   server counts them.
 

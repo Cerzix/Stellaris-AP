@@ -331,6 +331,7 @@ class WindowTest(unittest.TestCase):
         self.addCleanup(self.root.destroy)
         self.state = TrackerState()
         self.settings = Settings(None)
+        self.settings.tab = tracker.EVERYTHING
         self.view = tracker.TrackerWindow(self.root, lambda: self.state, self.settings)
         self.addCleanup(lambda: self.view.closed or self.view.close())
         self.root.update()
@@ -398,6 +399,46 @@ class WindowTest(unittest.TestCase):
         view.set_filter("base")
         self.assertIsNone(view.filter)
         self.assertEqual(self.item("tech_destroyers", "box", "fill"), self.settings.colour("node"))
+
+    def test_a_tab_shows_one_part_of_the_tree(self):
+        view = self.view
+        everything = len(view.drawn)
+        view.pin("tech_destroyers")
+        view.set_tab("physics")
+        self.assertEqual(self.settings.tab, "physics")
+        self.assertIn("tech_lasers_2", view.drawn)
+        self.assertNotIn("tech_destroyers", view.drawn)
+        self.assertNotIn("location_1001", view.drawn)
+        self.assertIsNone(view.pinned, "what was shown is in another tab")
+        self.assertEqual(list(view.band_titles), ["physics"])
+        self.assertLess(len(view.drawn), everything / 2)
+        self.assertIn("bold", str(view.tab["physics"].cget("font")))
+        # The search goes to where what it found is
+        view.toggle_spoilers()
+        view.search.insert(0, "destroyers")
+        view.search_changed()
+        self.assertIn("tech_destroyers", view.found)
+        while view.pinned != "tech_destroyers":
+            view.search_next()
+        self.assertEqual(self.settings.tab, "engineering")
+        self.assertIn("tech_destroyers", view.drawn)
+        view.set_tab(tracker.EVERYTHING)
+        self.assertEqual(len(view.drawn), everything)
+
+    def test_only_the_traditions_of_the_multiworld_are_listed(self):
+        view = self.view
+        traditions = [item["id"] for item in data.items() if item["kind"] == "tradition"]
+        self.assertIn(f"tradition_{traditions[1]}", view.drawn)
+        self.state.pool = frozenset(traditions[:1])
+        view.refresh()
+        self.assertIn(f"tradition_{traditions[0]}", view.drawn)
+        self.assertNotIn(f"tradition_{traditions[1]}", view.tree.nodes)
+        # Without shuffled traditions there is no tab for them
+        self.settings.tab = tracker.TRADITIONS
+        self.state.traditions = False
+        view.refresh()
+        self.assertEqual(view.shown_tab(), tracker.PICKS)
+        self.assertFalse(view.tab[tracker.TRADITIONS].winfo_manager())
 
     def test_bands_fold(self):
         view = self.view

@@ -85,6 +85,9 @@ class StellarisWorld(World):
         names = [tables.PROGRESSIVE_ASCENSION] * tables.ASCENSION_PERK_SLOTS + [tables.FRAGMENT] * self.fragments
         if self.options.randomize_traditions:
             names += [item["name"] for item in usable if item["kind"] == "tradition"]
+        # For the tracker, which lists the traditions that can be found
+        self.tradition_items = sorted(item["id"] for item in usable if item["kind"] == "tradition"
+                                      and self.options.randomize_traditions)
         technologies = [item["name"] for item in usable if item["kind"] == "technology"]
         names += [name for name in technologies if content.ITEMS_BY_NAME[name]["weight"] != 0]
         # Then the Random Events, and the technologies the game only hands out through events, which it
@@ -133,6 +136,7 @@ class StellarisWorld(World):
             "owned_dlc": sorted(self.options.owned_dlc.value),
             "empire_type": self.options.empire_type.current_key,
             "randomize_traditions": bool(self.options.randomize_traditions),
+            "tradition_items": self.tradition_items,
             "death_link": bool(self.options.death_link),
             "death_causes": [cause for cause, option in (
                 ("ruler", self.options.death_on_ruler), ("leader", self.options.death_on_leader),

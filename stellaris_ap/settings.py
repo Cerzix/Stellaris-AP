@@ -60,13 +60,17 @@ class Settings:
                                      if isinstance(collapsed, list) else [])
         # Whether the tracker shows what a location holds before it is checked. Not unless the player asks
         self.spoilers: bool = saved.get("spoilers") is True
+        # The part of the tree the tracker shows, see tracker.TABS. One part at a time is the default: the
+        # whole tree is some thousand shapes, which is slow to move around
+        self.tab: str = saved.get("tab") if isinstance(saved.get("tab"), str) else "physics"
 
     def save(self) -> None:
         """Keeps the settings. They are only a convenience: if they cannot be written, they are not kept."""
         if self.path:
             try:
                 self.path.write_text(json.dumps({"theme": self.theme, "colours": self.colours, "zoom": self.zoom,
-                                                 "collapsed": self.collapsed, "spoilers": self.spoilers},
+                                                 "collapsed": self.collapsed, "spoilers": self.spoilers,
+                                                 "tab": self.tab},
                                                 indent="	"), encoding="utf-8")
             except OSError:
                 pass
