@@ -12,6 +12,8 @@ ap_setup_player = {
 		limit = { NOT = { has_country_flag = ap_player } }
 		set_country_flag = ap_player
 		set_country_flag = ap_new_game
+		# While the game sets a galaxy up it makes leaders and throws them away again, which are no deaths
+		set_timed_country_flag = { flag = ap_starting days = 5 }
 		# Number of received items already applied to this save
 		set_variable = { which = ap_item_index value = 0 }
 	}

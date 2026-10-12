@@ -24,7 +24,7 @@ DOCS_DIR = stellaris_user_dir() / "logs" / "script_documentation"
 # Keys of the script syntax itself, which are neither effects nor triggers
 EVENT_KEYS = {"namespace", "event", "country_event", "id", "hide_window", "is_triggered_only", "immediate",
               "trigger", "limit", "which", "value", "tech", "message", "NOT",
-              "title", "desc", "picture", "location", "option", "name", "CLASS", "days",
+              "title", "desc", "picture", "location", "option", "name", "CLASS", "days", "flag",
               "defined_text", "random", "text", "localization_key", "default",
               "modifier", "multiplier",
               # Scopes
@@ -844,6 +844,16 @@ class GameFilesTest(unittest.TestCase):
         hidden = (HIDDEN_CONSOLE_MOD_DIR / "interface" / "console.gui").read_text(encoding="utf-8")
         self.assertEqual(normalise(hidden), normalise(vanilla))
         self.assertIn("position = { x = -5000 y = -5000 }", hidden)
+
+
+class StartOfAGameTest(unittest.TestCase):
+    def test_leaders_the_game_throws_away_at_the_start_are_no_deaths(self):
+        effects = (MOD_DIR / "common" / "scripted_effects" / "ap_effects.txt").read_text(encoding="utf-8")
+        events = (MOD_DIR / "events" / "ap_events.txt").read_text(encoding="utf-8")
+        setup = effects[effects.index("set_country_flag = ap_new_game"):effects.index("ap_mailbox_ready")]
+        self.assertRegex(setup, r"set_timed_country_flag = \{ flag = ap_starting days = \d+ \}")
+        leader = events[events.index("id = ap.30"):events.index("id = ap.31")]
+        self.assertIn("NOT = { has_country_flag = ap_starting }", leader[:leader.index("immediate")])
 
 
 @unittest.skipUnless((DOCS_DIR / "effects.log").is_file(), "no script documentation, run script_docs in the console")

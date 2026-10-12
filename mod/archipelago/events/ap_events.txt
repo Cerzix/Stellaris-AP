@@ -214,6 +214,7 @@ country_event = {
 	trigger = {
 		has_country_flag = ap_player
 		NOT = { has_country_flag = ap_dooming }
+		NOT = { has_country_flag = ap_starting }
 	}
 
 	immediate = {
