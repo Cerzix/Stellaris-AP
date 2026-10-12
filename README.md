@@ -105,5 +105,7 @@ its installer) and the zip of a [release](../../releases).
 
 ## License
 
-[MIT](LICENSE). Stellaris and its technologies, icons and names belong to Paradox Interactive; none of
-the game's files are part of this project.
+[MIT](LICENSE), for what was written for this project. Stellaris and its technologies, traditions and
+names belong to Paradox Interactive. As mods do, the mod changes some of the game's own script files
+(in `mod/archipelago/common/technology` and `tradition_categories`), and `data/` is read from the
+game; those stay Paradox's and are not covered by the license.
