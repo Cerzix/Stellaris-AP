@@ -56,10 +56,10 @@ tradition_supremacy = {
 			has_ap_pending = yes
 		}
 	}
-	potential = { NOT = { has_country_flag = ap_ai } }
+	potential = { NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } }
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_supremacy = {
 	desc = {
 		trigger = { is_regular_empire = yes }
@@ -115,5 +115,5 @@ tradition_ap_real_supremacy = {
 			has_ap_pending = yes
 		}
 	}
-	potential = { has_country_flag = ap_ai }
+	potential = { OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } }
 }

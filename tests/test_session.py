@@ -61,7 +61,7 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(names.player(0), "Archipelago")
 
 
-def keep_mod_files(test, write_session=lambda run=0, items=(), checked=(): None) -> None:
+def keep_mod_files(test, write_session=lambda run=0, items=(), checked=(), vanilla_traditions=False: None) -> None:
     """A session writes what a new game starts with into the mod. Not the session of a test."""
     original = build_mod.write_session
     build_mod.write_session = write_session
@@ -98,6 +98,9 @@ class FakeConnection:
     def scout(self, locations):
         self.scouted = list(locations)
 
+    def sync(self):
+        self.sent.append({"cmd": "Sync"})
+
     def say(self, text):
         self.said.append(text)
 
@@ -120,8 +123,10 @@ class ServerSessionTest(unittest.TestCase):
         build_mod.write_check_names = lambda names=None, players=None: self.names.append((names, players))
         self.addCleanup(setattr, build_mod, "write_check_names", original)
         self.starts = []
-        keep_mod_files(self, lambda run=0, items=(), checked=(): self.starts.append(
-            (run, [item["id"] for item in items], list(checked))))
+        self.vanilla = []
+        keep_mod_files(self, lambda run=0, items=(), checked=(), vanilla_traditions=False: (
+            self.starts.append((run, [item["id"] for item in items], list(checked))),
+            self.vanilla.append(vanilla_traditions)))
         self.store = Profiles(self.user_dir / "profiles.json")
         self.session = self.connect()
         self.server = self.session.connection
@@ -266,6 +271,40 @@ class ServerSessionTest(unittest.TestCase):
         self.assertEqual(stopped, [True])
         self.assertEqual(self.lines[-1][0], "error")
         self.assertFalse(self.session.connected)
+
+    def test_traditions_that_are_not_shuffled(self):
+        self.connected(randomize_traditions=False)
+        traditions = [location["id"] for location in data.locations() if location["kind"] == "tradition"]
+        self.assertFalse(set(traditions) & set(self.server.scouted), "they are no locations of this multiworld")
+        self.assertEqual(len(self.server.scouted), len(data.locations()) - len(traditions))
+        self.server.on_event("scouted", {})
+        self.session.tick()
+        self.assertTrue(self.vanilla[-1], "a new game has the trees of the game")
+        self.assertFalse(self.session.tracker_state().traditions)
+        self.assertIn(f"of {len(data.locations()) - len(traditions)} locations", self.session.status())
+
+    def test_traditions_are_shuffled_unless_the_multiworld_says_otherwise(self):
+        self.connected()
+        self.server.on_event("scouted", {})
+        self.session.tick()
+        self.assertFalse(self.vanilla[-1])
+        self.assertTrue(self.session.tracker_state().traditions)
+
+    def test_hint_points_come_from_the_server(self):
+        self.connected()
+        self.assertNotIn("hint", self.session.status(), "not before the server has told them")
+        self.server.on_event("hints", 3, 64)
+        self.session.tick()
+        self.assertIn("3 hint points (a hint costs 64)", self.session.status())
+        self.session.command("!hint Destroyers")
+        self.assertEqual(self.server.said, ["!hint Destroyers"], "the server answers a hint, not the client")
+
+    def test_everything_can_be_asked_for_again(self):
+        self.connected()
+        self.server.scouted = []
+        self.session.resync()
+        self.assertIn({"cmd": "Sync"}, self.server.sent)
+        self.assertEqual(len(self.server.scouted), len(data.locations()))
 
     def test_goal_crisis(self):
         self.connected(goal="crisis")

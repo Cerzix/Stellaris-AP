@@ -2,7 +2,7 @@
 # Client -> game: the client writes the id of a received item into the variable ap_mailbox,
 # in the memory of the running game. ap_poll_mailbox looks into the mailbox once a day.
 # ap_report_checks, ap_report_setup, ap_report_last_check, ap_report_picks, ap_init_tree_slots,
-# ap_assign_tree_slots and ap_grant_item are generated, see ap_generated_effects.txt
+# ap_assign_tree_slots, ap_add_tradition and ap_grant_item are generated, see ap_generated_effects.txt
 
 # Scope: the human player's country
 ap_setup_player = {
@@ -12,6 +12,8 @@ ap_setup_player = {
 		limit = { NOT = { has_country_flag = ap_player } }
 		set_country_flag = ap_player
 		set_country_flag = ap_new_game
+		# While the game sets a galaxy up it makes leaders and throws them away again, which are no deaths
+		set_timed_country_flag = { flag = ap_starting days = 5 }
 		# Number of received items already applied to this save
 		set_variable = { which = ap_item_index value = 0 }
 	}
@@ -43,9 +45,8 @@ ap_setup_player = {
 	if = {
 		limit = { NOT = { has_country_flag = ap_events_ready } }
 		set_country_flag = ap_events_ready
-		# What the last death took, and what the last Random Event was, for their messages
+		# What the last death took, for its message
 		set_variable = { which = ap_death_effect value = 0 }
-		set_variable = { which = ap_event_kind value = 0 }
 	}
 	if = {
 		limit = { NOT = { has_country_flag = ap_traditions_ready } }
@@ -248,8 +249,8 @@ ap_poll_mailbox = {
 	set_variable = { which = ap_mailbox value = ap_mailbox_next }
 }
 
-# A death in the multiworld takes a leader, but not the ruler. ap_death_effect says afterwards what
-# happened, for the message: 1 a leader died, 3 there was none.
+# A death in the multiworld takes a leader: the ruler only if no other leader is left. ap_death_effect
+# says afterwards what happened, for the message: 1 a leader died, 3 there was none.
 # Scope: country
 ap_death_leader = {
 	if = {
@@ -258,6 +259,15 @@ ap_death_leader = {
 		set_country_flag = ap_dooming
 		random_owned_leader = {
 			limit = { is_ruler = no }
+			kill_leader = { show_notification = yes }
+		}
+		remove_country_flag = ap_dooming
+	}
+	else_if = {
+		limit = { any_owned_leader = { is_ruler = yes } }
+		set_country_flag = ap_dooming
+		random_owned_leader = {
+			limit = { is_ruler = yes }
 			kill_leader = { show_notification = yes }
 		}
 		remove_country_flag = ap_dooming
@@ -284,61 +294,24 @@ ap_death_fleet = {
 	}
 }
 
-# The item Random Event: something happens, good or bad, and a message says what
+# The item Random Event: one of the game's own random events happens, the kind it otherwise brings up
+# every few years. The pools are the game's, see ap_random_events.txt; an event only comes up if the game
+# finds it fitting for the empire as it is, and brings its own message
 # Scope: country
 ap_random_event = {
-	ap_random_event_roll = yes
-	country_event = { id = ap.21 }
-}
-
-# What happens, without the message. ap_event_kind says what it was
-# Scope: country
-ap_random_event_roll = {
 	random_list = {
-		10 = {
-			set_variable = { which = ap_event_kind value = 1 }
-			add_resource = { minerals = 2000 energy = 2000 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 2 }
-			add_modifier = { modifier = ap_event_research_boom years = 5 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 3 }
-			add_modifier = { modifier = ap_event_golden_age years = 5 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 4 }
-			add_modifier = { modifier = ap_event_fleet_drills years = 5 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 5 }
-			add_resource = { alloys = 500 unity = 1000 influence = 100 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 6 }
-			add_resource = { energy = -1500 minerals = -1500 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 7 }
-			add_modifier = { modifier = ap_event_research_slump years = 5 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 8 }
-			add_modifier = { modifier = ap_event_unrest years = 5 }
-		}
-		10 = {
-			set_variable = { which = ap_event_kind value = 9 }
-			add_modifier = { modifier = ap_event_sabotage years = 5 }
-		}
-		5 = {
-			# Not among the events that are played again when a new game starts
+		60 = {
 			modifier = {
 				factor = 0
-				has_country_flag = ap_starting_run
+				NOT = { any_owned_planet = { is_colony = yes } }
 			}
-			set_variable = { which = ap_event_kind value = 10 }
-			ap_death_fleet = yes
+			random_owned_planet = {
+				limit = { is_colony = yes }
+				fire_on_action = { on_action = on_ap_random_colony_event }
+			}
+		}
+		40 = {
+			fire_on_action = { on_action = on_ap_random_country_event }
 		}
 	}
 }

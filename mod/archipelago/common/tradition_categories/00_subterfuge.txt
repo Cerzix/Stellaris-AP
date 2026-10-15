@@ -7,7 +7,7 @@ tradition_subterfuge = {
 	finish_bonus = "tr_ap_subterfuge_finish"
 
 	potential = {
-		NOT = { has_country_flag = ap_ai }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
 		has_nemesis = yes
 	}
 
@@ -40,14 +40,14 @@ tradition_subterfuge = {
 	}
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_subterfuge = {
 	tree_template = "tree_12_12"
 	adoption_bonus = "tr_subterfuge_adopt"
 	finish_bonus = "tr_subterfuge_finish"
 
 	potential = {
-		has_country_flag = ap_ai
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
 		has_nemesis = yes
 	}
 

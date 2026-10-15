@@ -89,12 +89,14 @@ class StateTest(unittest.TestCase):
         self.assertEqual(counts["all"], (3, len(data.locations())))
         self.assertEqual((counts["technology"][0], counts["tradition"], counts["perk"]), (1, (1, 49), (1, 8)))
         text = tracker.summary_text(self.state, data.locations())
-        self.assertIn(f"3 of {len(data.locations())} locations checked (0%)", text)
+        self.assertIn(f"3 of {len(data.locations())} locations checked (0.47%)", text)
         self.assertIn("Items received 1", text)
         everything = TrackerState(checked={location["id"] for location in data.locations()}, goal="Goal: done")
         text = tracker.summary_text(everything, data.locations())
-        self.assertIn("(100%)", text)
-        self.assertTrue(text.endswith("Goal: done"))
+        self.assertIn("(100.00%)", text)
+        self.assertNotIn("Goal", text, "the goal has a line of its own")
+        without = [location for location in data.locations() if location["kind"] != "tradition"]
+        self.assertNotIn("Traditions", tracker.summary_text(self.state, without))
         band = next(band for band in self.tree.bands if band.key == "picks")
         self.assertEqual(tracker.band_text(band, self.tree, self.state), "▾ Traditions and ascension perks   2/57")
 
@@ -201,6 +203,66 @@ class StateTest(unittest.TestCase):
         self.assertIn("in the place of Tree 1: Adopted", self.text("location_1001"))
         self.assertIn("Location: can be picked now", self.text("location_1002"))
 
+    def test_received_traditions_are_listed(self):
+        tree = tracker.build_tree(data.technologies(), data.locations(), trees=data.normal_trees())
+        self.assertEqual([band.key for band in tree.bands], ["picks", "traditions", "physics", "society", "engineering"])
+        band = tree.bands[1]
+        traditions = [item for item in data.items() if item["kind"] == "tradition"]
+        self.assertEqual(len(band.nodes), len(traditions))
+        first = traditions[0]
+        node = tree.nodes[f"tradition_{first['id']}"]
+        self.assertEqual((node.label, node.kind, node.item, node.location), (first["name"], "tradition", first["id"], None))
+        self.assertTrue(node.group)
+        state = TrackerState(received={first["id"]})
+        self.assertEqual(tracker.band_text(band, tree, state), "▾ Archipelago Traditions   1 received")
+        self.assertTrue(tracker.fits(node, state, {}, "received"))
+        said = "".join(text for text, _ in tracker.describe(node, state, {}, {}))
+        self.assertIn(f"A tradition of {node.group}", said)
+        self.assertIn("The tradition itself: received", said)
+        self.assertIn(node.key, tracker.matches(tree, state, first["name"]))
+        places = [(other.x, other.y) for other in tree.nodes.values()]
+        self.assertEqual(len(places), len(set(places)), "nothing overlaps")
+        # Not shuffled: neither the locations nor the list
+        plain = tracker.build_tree(data.technologies(), [location for location in data.locations()
+                                                         if location["kind"] != "tradition"])
+        self.assertEqual([band.key for band in plain.bands], ["picks", "physics", "society", "engineering"])
+        self.assertEqual(len(plain.bands[0].nodes), data.ASCENSION_PERK_SLOTS)
+
+    def test_a_hidden_location_is_not_found_by_the_name_of_its_place(self):
+        hidden = self.state.without_spoilers()
+        self.assertIn("tech_destroyers", tracker.matches(self.tree, hidden, "Destroyer"), "checked, so it is shown")
+        self.assertNotIn("tech_cruisers", tracker.matches(self.tree, hidden, "Cruisers"))
+        self.assertIn("tech_cruisers", tracker.matches(self.tree, self.state, "Cruisers"))
+        self.assertIn("tech_corvettes", tracker.matches(self.tree, hidden, "Corvettes"), "a base technology is no secret")
+
+    def test_what_can_be_researched_or_picked_now_is_named_without_spoilers(self):
+        # Tree 1 is adopted: its first tradition can be picked, the one of tree 2 can not
+        self.state.holds[1002] = ("Hookshot", "Link", "progression", None)
+        self.state.holds[1009] = ("Bombs", "Link", "useful", None)
+        shown = tracker.open_locations(self.tree, data.technologies(), self.state)
+        self.assertIn(1002, shown)
+        self.assertNotIn(1009, shown)
+        self.assertNotIn(self.cruisers.location, shown, "its tier is not open")
+        self.assertNotIn(1001, shown, "checked, which is shown anyway")
+        hidden = self.state.without_spoilers(shown)
+        self.assertEqual(set(hidden.holds), {self.destroyers.location, 1002})
+        self.assertEqual(tracker.name_of(self.tree.nodes["location_1002"], hidden), "Hookshot")
+        self.assertEqual(tracker.name_of(self.tree.nodes["location_1009"], hidden), tracker.UNKNOWN_ITEM)
+
+    def test_a_tradition_tree_is_a_block_from_its_adoption_down_to_its_finish(self):
+        for slot in range(data.TREE_SLOTS):
+            block = [self.tree.nodes[f"location_{data.tradition_location(slot, position)}"]
+                     for position in range(data.TRADITIONS_PER_TREE)]
+            self.assertEqual(len({node.x for node in block}), 1, "one below the other")
+            self.assertEqual([node.y for node in block], sorted(node.y for node in block))
+            self.assertTrue(block[0].label.endswith("Adopted") and block[-1].label.endswith("Finished"))
+            if slot:
+                self.assertGreater(block[0].x, self.tree.nodes[f"location_{data.tradition_location(slot - 1, 0)}"].x)
+        perks = [self.tree.nodes[f"location_{data.PERK_ID_BASE + number}"]
+                 for number in range(1, data.ASCENSION_PERK_SLOTS + 1)]
+        self.assertEqual(len({node.y for node in perks}), 1)
+        self.assertGreater(perks[0].y, self.tree.nodes[f"location_{data.tradition_location(0, 6)}"].y)
+
     def test_search(self):
         self.assertEqual(tracker.matches(self.tree, self.state, "ender pearl"), ["tech_destroyers"], "by what it holds")
         found = tracker.matches(self.tree, self.state, "Destroyer")
@@ -269,6 +331,7 @@ class WindowTest(unittest.TestCase):
         self.addCleanup(self.root.destroy)
         self.state = TrackerState()
         self.settings = Settings(None)
+        self.settings.tab = tracker.EVERYTHING
         self.view = tracker.TrackerWindow(self.root, lambda: self.state, self.settings)
         self.addCleanup(lambda: self.view.closed or self.view.close())
         self.root.update()
@@ -305,6 +368,9 @@ class WindowTest(unittest.TestCase):
         view = self.view
         view.search.insert(0, "destroyer")
         view.search_changed()
+        self.assertEqual(view.found, [], "hidden locations are not found by the name of their place")
+        view.toggle_spoilers()
+        view.search_changed()
         self.assertGreater(len(view.found), 1)
         self.assertIn("found", view.found_label.cget("text"))
         self.assertEqual(self.item("tech_destroyers", "box", "outline"), self.settings.colour("match"))
@@ -333,6 +399,46 @@ class WindowTest(unittest.TestCase):
         view.set_filter("base")
         self.assertIsNone(view.filter)
         self.assertEqual(self.item("tech_destroyers", "box", "fill"), self.settings.colour("node"))
+
+    def test_a_tab_shows_one_part_of_the_tree(self):
+        view = self.view
+        everything = len(view.drawn)
+        view.pin("tech_destroyers")
+        view.set_tab("physics")
+        self.assertEqual(self.settings.tab, "physics")
+        self.assertIn("tech_lasers_2", view.drawn)
+        self.assertNotIn("tech_destroyers", view.drawn)
+        self.assertNotIn("location_1001", view.drawn)
+        self.assertIsNone(view.pinned, "what was shown is in another tab")
+        self.assertEqual(list(view.band_titles), ["physics"])
+        self.assertLess(len(view.drawn), everything / 2)
+        self.assertIn("bold", str(view.tab["physics"].cget("font")))
+        # The search goes to where what it found is
+        view.toggle_spoilers()
+        view.search.insert(0, "destroyers")
+        view.search_changed()
+        self.assertIn("tech_destroyers", view.found)
+        while view.pinned != "tech_destroyers":
+            view.search_next()
+        self.assertEqual(self.settings.tab, "engineering")
+        self.assertIn("tech_destroyers", view.drawn)
+        view.set_tab(tracker.EVERYTHING)
+        self.assertEqual(len(view.drawn), everything)
+
+    def test_only_the_traditions_of_the_multiworld_are_listed(self):
+        view = self.view
+        traditions = [item["id"] for item in data.items() if item["kind"] == "tradition"]
+        self.assertIn(f"tradition_{traditions[1]}", view.drawn)
+        self.state.pool = frozenset(traditions[:1])
+        view.refresh()
+        self.assertIn(f"tradition_{traditions[0]}", view.drawn)
+        self.assertNotIn(f"tradition_{traditions[1]}", view.tree.nodes)
+        # Without shuffled traditions there is no tab for them
+        self.settings.tab = tracker.TRADITIONS
+        self.state.traditions = False
+        view.refresh()
+        self.assertEqual(view.shown_tab(), tracker.PICKS)
+        self.assertFalse(view.tab[tracker.TRADITIONS].winfo_manager())
 
     def test_bands_fold(self):
         view = self.view

@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.1.0
+
+From the first full test in the game.
+
+### Changed
+
+- Random Events are events of Stellaris itself now, not ones made up for this: the kind the game
+  brings up on a colony that is a few years old, or in an empire every few years. Which one comes up
+  is up to the game, and it brings its own message. In a new game of a run they are played again one
+  after the other over the first years, each with its own message, instead of all at once.
+- A tradition received as an item no longer leaves its tree in the tradition window, where it took
+  the place of a tree to adopt. The traditions you have received are listed in the tracker, under
+  "Archipelago Traditions". Whether the game lets a tree be taken away like this is not tested yet:
+  the client's log says which it was, the first time a tradition arrives.
+- A death from the multiworld takes the ruler if no other leader is left.
+
+### Added
+
+- The option `randomize_traditions`. Turned off, the tradition trees are the ones of the game.
+- The tracker shows how far the goal is on a line of its own, counts the locations to two decimals,
+  and has a Refresh button that reads everything again.
+- The tracker names a location after what it holds as soon as it can be researched or picked, as the
+  game does, not only once it is checked. The tradition trees are a block each, side by side, with
+  the adoption at the top and the finish at the bottom.
+- The tracker has tabs: the traditions and perks, the received traditions and each area of research
+  on their own, which is much faster to move around than everything at once. The search goes to the
+  tab of what it found. Only the traditions that are in the multiworld are listed.
+- The options are sorted under headings in the Options Creator: Goal, Your Game, Randomizer,
+  DeathLink and Doom. `deaths_per_doom` is a number from 0 (never) to 50; the names it had before
+  still work in a YAML.
+- `/status` and the line under the connection show your hint points and what a hint costs, as the
+  server counts them.
+
+### Fixed
+
+- The first leader a new game throws away is not a death for everyone.
+- Every tradition the empire can use is in the multiworld. Before, only 49 of them were, picked at
+  random, and the others could not be had at all. Where that leaves no room, Random Events and the
+  technologies the game only hands out through events are the ones left out.
+- The client no longer takes the log Stellaris left behind the last time for a game that is loaded now.
+  Without the game running it reported an empire and DLCs of that earlier game, and warned about them.
+- The search of the tracker does not light up a location whose item is hidden.
+- When the client is started a second time, the window of the first one closes.
+
 ## 1.0.0
 
 The first release: Stellaris in an Archipelago multiworld.

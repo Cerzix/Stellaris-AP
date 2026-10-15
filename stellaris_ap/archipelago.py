@@ -12,6 +12,7 @@ from that thread:
     ("print", [(text, kind), ...], type)   a message of the server, in parts. kind: "text", "player",
                                  "me", "location", "progression", "useful", "trap" or "filler"
     ("death", {"source": name, "cause": text})   a DeathLink death
+    ("hints", points, cost)      the hint points of the slot, and how many of them a hint costs
 """
 import asyncio
 import json
@@ -138,6 +139,10 @@ class Connection:
         self.seed = ""
         self.slot = 0
         self.received: list[dict] = []
+        # What a hint costs, in percent of the locations of the slot, and what that is in points
+        self.hint_percent = 0
+        self.hint_cost = 0
+        self.hint_points = 0
         self.loop: asyncio.AbstractEventLoop | None = None
         self.socket = None
         # Whether the server let the slot in. Before that it takes nothing but the login
@@ -165,6 +170,10 @@ class Connection:
 
     def check(self, locations: list[int]) -> None:
         self.send({"cmd": "LocationChecks", "locations": list(locations)})
+
+    def sync(self) -> None:
+        """Asks for every item received so far once more."""
+        self.send({"cmd": "Sync"})
 
     def scout(self, locations: list[int]) -> None:
         self.send({"cmd": "LocationScouts", "locations": list(locations), "create_as_hint": 0})
@@ -235,6 +244,7 @@ class Connection:
         command = message.get("cmd")
         if command == "RoomInfo":
             self.seed = message.get("seed_name", "")
+            self.hint_percent = message.get("hint_cost", 0)
             await self.deliver({"cmd": "GetDataPackage", "games": message.get("games", [])})
         elif command == "DataPackage":
             for game, package in message["data"]["games"].items():
@@ -253,12 +263,20 @@ class Connection:
             self.names.players = {player["slot"]: player["alias"] for player in message["players"]
                                   if player["team"] == message["team"]}
             self.names.games = {int(slot): info["game"] for slot, info in message.get("slot_info", {}).items()}
+            # As the server counts it: a share of the locations of the slot, and at least one point
+            locations = len(message.get("checked_locations", [])) + len(message.get("missing_locations", []))
+            self.hint_cost = max(1, int(self.hint_percent * 0.01 * locations)) if self.hint_percent else 0
+            self.hint_points = message.get("hint_points", 0)
+            self.on_event("hints", self.hint_points, self.hint_cost)
             self.on_event("connected", {
                 "seed": self.seed, "slot": self.slot, "team": message["team"], "players": dict(self.names.players),
                 "slot_data": message.get("slot_data", {}), "checked": list(message.get("checked_locations", []))})
             outbox, self.outbox = self.outbox, []
             for waiting in outbox:
                 await self.deliver(waiting)
+        elif command == "RoomUpdate" and "hint_points" in message:
+            self.hint_points = message["hint_points"]
+            self.on_event("hints", self.hint_points, self.hint_cost)
         elif command == "ReceivedItems":
             merged = merge_items(self.received, message["index"], message["items"])
             if merged is None:

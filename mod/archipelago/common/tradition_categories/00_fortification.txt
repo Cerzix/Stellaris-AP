@@ -14,7 +14,7 @@ tradition_unyielding = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
 		is_nomadic = no
 		OR = {
 			host_has_dlc = "Apocalypse"
@@ -63,7 +63,7 @@ tradition_unyielding = {
 	}
 }
 
-# For the AI countries: the tree of the game
+# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
 tradition_ap_real_unyielding = {
 	tree_template = "tree_111_11"
 	adoption_bonus = "tr_unyielding_adopt"
@@ -77,7 +77,7 @@ tradition_ap_real_unyielding = {
 	}
 
 	potential = {
-		has_country_flag = ap_ai
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
 		is_nomadic = no
 		OR = {
 			host_has_dlc = "Apocalypse"

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from Options import Choice, DeathLink, DefaultOnToggle, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import (Choice, DeathLink, DefaultOnToggle, NamedRange, OptionGroup, OptionSet, PerGameCommonOptions,
+                     Range, Toggle)
 
 from . import content
 
@@ -61,6 +62,14 @@ class EmpireType(Choice):
     default = 0
 
 
+class RandomizeTraditions(DefaultOnToggle):
+    """Whether the traditions are shuffled into the multiworld. If they are, every tradition you adopt is a
+    location, and the real traditions arrive as items and work whichever trees you have adopted.
+    If they are not, the tradition trees are the ones of the game and have nothing to do with the multiworld.
+    Ascension perk slots come from Progressive Ascension either way."""
+    display_name = "Randomize Traditions"
+
+
 class EarlyProgression(DefaultOnToggle):
     """Keeps everything a player needs to win out of your late game: technologies of tier 4 and 5,
     the fifth to seventh tradition tree and the fifth to eighth ascension perk only hold filler."""
@@ -68,8 +77,9 @@ class EarlyProgression(DefaultOnToggle):
 
 
 class RandomEvents(Range):
-    """How many Random Events are mixed into the multiworld. When one arrives something happens to your empire,
-    good or bad: a windfall, a breakthrough, a market crash, unrest, a lost fleet..."""
+    """How many Random Events are mixed into the multiworld. When one arrives, one of the random events of
+    Stellaris itself comes up: the kind the game otherwise brings up on a colony or in an empire every few
+    years, good or bad."""
     display_name = "Random Events"
     range_start = 0
     range_end = 50
@@ -113,16 +123,16 @@ class DeathEffect(Choice):
     default = 0
 
 
-class DeathsPerDoom(Choice):
-    """DeathLink: how many deaths in the multiworld it takes for a doom, which destroys one of your colonies."""
+class DeathsPerDoom(NamedRange):
+    """DeathLink: how many deaths in the multiworld it takes for a doom, which destroys one of your colonies.
+    0 is never."""
     display_name = "Deaths per Doom"
-    option_every_death = 1
-    option_every_2_deaths = 2
-    option_every_3_deaths = 3
-    option_every_5_deaths = 5
-    option_every_10_deaths = 10
-    option_never = 0
+    range_start = 0
+    range_end = 50
     default = 3
+    # The names this had when it was a list to pick from, so that a YAML of then still works
+    special_range_names = {"never": 0, "every_death": 1, "every_2_deaths": 2, "every_3_deaths": 3,
+                           "every_5_deaths": 5, "every_10_deaths": 10}
 
 
 class Doom(Choice):
@@ -141,6 +151,16 @@ class DoomCapital(Toggle):
     display_name = "Doom Can Strike the Capital"
 
 
+# The headings the options are sorted under, in the Options Creator and on the website
+OPTION_GROUPS = [
+    OptionGroup("Goal", [Goal, FragmentCount, FragmentsRequired, LocationsRequired]),
+    OptionGroup("Your Game", [OwnedDLC, EmpireType]),
+    OptionGroup("Randomizer", [RandomizeTraditions, EarlyProgression, RandomEvents]),
+    OptionGroup("DeathLink", [DeathLink, DeathOnRuler, DeathOnLeader, DeathOnColony, DeathOnBattle, DeathEffect]),
+    OptionGroup("Doom", [DeathsPerDoom, Doom, DoomCapital]),
+]
+
+
 @dataclass
 class StellarisOptions(PerGameCommonOptions):
     goal: Goal
@@ -149,6 +169,7 @@ class StellarisOptions(PerGameCommonOptions):
     locations_required: LocationsRequired
     owned_dlc: OwnedDLC
     empire_type: EmpireType
+    randomize_traditions: RandomizeTraditions
     early_progression: EarlyProgression
     death_link: DeathLink
     random_events: RandomEvents

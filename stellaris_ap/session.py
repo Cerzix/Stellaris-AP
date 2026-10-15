@@ -42,7 +42,8 @@ HELP = """/help            this list
 /status          what was checked and received so far
 /offline         play without a server: every technology and tradition of your own game, shuffled
 /offline new     the same, with a new shuffle"""
-SERVER_HELP = """!hint <item>     ask the multiworld where one of your items is
+SERVER_HELP = """!hint <item>     ask the multiworld where one of your items is. The server answers, and
+                 only if you have the hint points for it: /status says how many you have
 !hint_location <location>   ask what is at one of your locations
 !help            what else the server understands
 Anything else you type is said to the other players."""
@@ -59,6 +60,10 @@ class Session:
         # The icon of every item that is a technology of Stellaris, by its name
         self.icons = {item["name"]: item["icon"] for item in data.items() if item["kind"] == "technology"}
         self.locations = {location["id"]: location["name"] for location in data.locations()}
+        # Whether the traditions are shuffled. If not, the player has the trees of the game
+        self.shuffled_traditions = True
+        # The ids of the traditions that are items of the run, None if that is not known
+        self.tradition_pool: frozenset | None = None
         # Whether the names of the run are written, which the game needs at its start
         self.ready = False
 
@@ -87,7 +92,8 @@ class Session:
     def write_start(self) -> None:
         """Writes what a new game of the run starts with: the run, its unlocks so far, and the checks done."""
         if self.profile:
-            build_mod.write_session(self.profile.run, self.start_items(), self.profile.checked)
+            build_mod.write_session(self.profile.run, self.start_items(), self.profile.checked,
+                                    vanilla_traditions=not self.shuffled_traditions)
 
     def on_check(self, location: int) -> None:
         raise NotImplementedError
@@ -107,7 +113,11 @@ class Session:
 
     def tracker_state(self) -> TrackerState:
         """What the tracker shows of the run."""
-        return TrackerState(checked=set(self.profile.checked) if self.profile else set())
+        return TrackerState(checked=set(self.profile.checked) if self.profile else set(),
+                            traditions=self.shuffled_traditions)
+
+    def resync(self) -> None:
+        """Reads everything again, for the player who thinks something is missing."""
 
     def command(self, text: str) -> None:
         """Something the player typed."""
@@ -157,7 +167,7 @@ class OfflineSession(Session):
 
     def tracker_state(self) -> TrackerState:
         return TrackerState(
-            checked=set(self.profile.checked),
+            checked=set(self.profile.checked), traditions=self.shuffled_traditions,
             holds={location: (self.items[item]["name"], "you", "filler", self.items[item].get("icon"))
                    for location, item in self.placement.items()},
             received={item for item, _ in self.profile.sent},
@@ -182,6 +192,8 @@ class ServerSession(Session):
         self.won = False
         self.warned = False
         self.connected = False
+        # The hint points of the slot and what a hint costs, as the server tells them. None until it has
+        self.hints: tuple[int, int] | None = None
         self.last_death_sent = float("-inf")
         self.clock = time.monotonic
         self.connection = connect(address, slot_name, password, lambda *event: self.events.put(event))
@@ -223,6 +235,19 @@ class ServerSession(Session):
         self.players = info["players"]
         self.slot_data = info["slot_data"]
         self.profile = profile
+        # A multiworld made before this was an option has them shuffled
+        self.shuffled_traditions = bool(self.slot_data.get("randomize_traditions", True))
+        # The traditions that are items of the multiworld. One made before it said so has some of the ones
+        # the empire can use, and does not tell which
+        pool = self.slot_data.get("tradition_items")
+        if pool is None:
+            dlcs, empire = self.slot_data.get("owned_dlc", []), self.slot_data.get("empire_type", "regular")
+            pool = [item["id"] for item in data.items()
+                    if item["kind"] == "tradition" and data.tables.usable(item, dlcs, empire)]
+        self.tradition_pool = frozenset(pool)
+        if not self.shuffled_traditions:
+            self.locations = {location["id"]: location["name"] for location in data.locations()
+                              if location["kind"] != "tradition"}
         self.log("server", f"Connected. {len(self.players)} player(s) in the multiworld.")
         if self.slot_data.get("death_link") and not self.connection.death_link:
             self.connection.death_link = True
@@ -240,6 +265,15 @@ class ServerSession(Session):
                               self.slot_data.get("death_effect", "random"), bool(self.slot_data.get("doom_capital")))
             self.bridge.checked |= set(self.profile.checked)
         self.connection.scout(list(self.locations))
+
+    def on_hints(self, points: int, cost: int) -> None:
+        self.hints = (points, cost)
+
+    def resync(self) -> None:
+        if self.connected:
+            self.connection.sync()
+            self.connection.scout(list(self.locations))
+            self.log("server", "Asked the server for everything again.")
 
     def on_refused(self, errors: list[str]) -> None:
         reasons = {"InvalidSlot": "there is no slot with that name", "InvalidGame": "that slot is not a Stellaris slot",
@@ -356,6 +390,7 @@ class ServerSession(Session):
                                   self.icons.get(entry["item"]) if entry.get("game") == GAME else None)
                        for location, entry in self.scouted.items()}
         state.received = {entry["item"] for entry in self.received}
+        state.pool = self.tradition_pool
         state.perk_slots = self.count_received(data.PROGRESSIVE_ASCENSION)
         goal = self.slot_data.get("goal")
         if goal == "fragments":
@@ -374,8 +409,12 @@ class ServerSession(Session):
     def status(self) -> str:
         if self.profile is None:
             return "Not connected yet."
-        return (f"{len(self.profile.checked)} of {len(self.locations)} locations checked, "
+        text = (f"{len(self.profile.checked)} of {len(self.locations)} locations checked, "
                 f"{len(self.received)} items received")
+        if self.hints:
+            points, cost = self.hints
+            text += f", {points} hint points" + (f" (a hint costs {cost})" if cost else " (hints are free)")
+        return text
 
     def command(self, text: str) -> None:
         if text.startswith("/"):

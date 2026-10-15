@@ -40,6 +40,10 @@ MAX_COST = 24000
 # game does not know yet which country the player has: at that time nobody has a flag, and is_ai
 # does not tell the player apart.
 NOT_AI = "NOT = { has_country_flag = ap_ai }"
+# The player of a multiworld whose traditions are not shuffled has this flag, from the start of the game
+VANILLA_TRADITIONS = "ap_vanilla_traditions"
+NOT_VANILLA = f"NOT = {{ has_country_flag = {VANILLA_TRADITIONS} }}"
+REAL_TREES = f"OR = {{ has_country_flag = ap_ai has_country_flag = {VANILLA_TRADITIONS} }}"
 # Appended to the weight modifiers of a technology, so that it comes last and nothing is added afterwards
 HIDE = f"modifier = {{ factor = 0 {NOT_AI} }}"
 
@@ -79,29 +83,6 @@ EVENT_TEXT = {
     "ap_death_effect_1": "§ROne of our leaders died with them.§!",
     "ap_death_effect_2": "§ROne of our fleets was lost with them.§!",
     "ap_death_effect_3": "It found nothing of ours to take.",
-    "ap.21.name": "Archipelago: Random Event",
-    "ap.21.desc": "[Root.GetAPEvent]",
-    "ap.21.a": "So be it.",
-    "ap.22.desc": "The random events this run has received so far have struck again, each with a new outcome."
-                  "\\n\\nOur empire starts with everything the run has received.",
-    "ap_event_0": "Nothing happens.",
-    "ap_event_1": "§GA windfall.§! A convoy nobody remembers ordering arrives with minerals and energy credits.",
-    "ap_event_2": "§GA breakthrough.§! Our scientists see everything a little more clearly: research is faster "
-                  "for five years.",
-    "ap_event_3": "§GA golden age.§! Our people are content: stability is higher for five years.",
-    "ap_event_4": "§GFleet drills.§! Our gunners have never been sharper: ships fire faster for five years.",
-    "ap_event_5": "§GA gift.§! Alloys, unity and influence, from an admirer who prefers not to be named.",
-    "ap_event_6": "§RA market crash.§! Minerals and energy credits vanish from our accounts.",
-    "ap_event_7": "§RA setback.§! A corrupted archive has to be rebuilt: research is slower for five years.",
-    "ap_event_8": "§RUnrest.§! Our people are restless: stability is lower for five years.",
-    "ap_event_9": "§RSabotage.§! Someone has been at our engines: ships are slower for five years.",
-    "ap_event_10": "§RA fleet is lost.§! One of our fleets has vanished without a trace.",
-    "ap_event_research_boom": "Breakthrough",
-    "ap_event_research_slump": "Research Setback",
-    "ap_event_golden_age": "Golden Age",
-    "ap_event_unrest": "Unrest",
-    "ap_event_fleet_drills": "Fleet Drills",
-    "ap_event_sabotage": "Sabotage",
     "ap.13.name": "Archipelago: Another Run",
     "ap.13.desc": "This save belongs to another run than the one that was picked in the launcher."
                   "\\n\\nNothing is sent or received. To go on with this save, close the game and pick its "
@@ -109,9 +90,24 @@ EVENT_TEXT = {
     "ap.13.a": "Understood.",
 }
 
-# The values of ap_death_effect and ap_event_kind that have a text, see ap_effects.txt
+# The values of ap_death_effect that have a text, see ap_effects.txt
 DEATH_EFFECT_TEXTS = (1, 2, 3)
-RANDOM_EVENTS = 10
+
+# The item Random Event brings up one of the events of these lists of the game's on_actions: what it brings
+# up by itself on a colony that is a few years old, and in an empire every few years
+RANDOM_EVENT_POOLS = {
+    "on_ap_random_colony_event": (
+        "on_colony_1_year_old", "on_colony_2_years_old", "on_colony_3_years_old", "on_colony_4_years_old",
+        "on_colony_5_years_old", "on_colony_10_years_old", "on_colony_25_years_old", "on_colony_5_year_pulse"),
+    "on_ap_random_country_event": (
+        "on_five_year_random_pulse_country", "on_five_year_random_pulse_country_negative_list",
+        "on_five_year_random_pulse_country_fe_list", "on_yearly_random_pulse_country_caravaneers_list",
+        "on_five_year_pulse_country", "on_five_years_communication_spread_country"),
+}
+RANDOM_EVENTS_FILE = "ap_random_events.txt"
+# Days into a new game of a run at which its first Random Event is played again, and between two of them
+REPLAY_FIRST_DAY = 30
+REPLAY_DAYS_APART = 45
 
 ICON_NAME = "ap_check"
 ICON_SOURCE = REPO / "archipelago_tech.png"
@@ -256,9 +252,9 @@ def render_tradition_category(text: str, tree: dict) -> str:
     for tradition in tree["traditions"]:
         checks = re.sub(rf'"{tradition["key"]}"', f'"{check_tradition(tradition["key"])}"', checks)
     return (f"{HEADER}\n# For the player: the tree of the game, with a location in place of every tradition\n"
-            f"{tree['key']} = {with_potential(checks, NOT_AI)}\n"
-            f"\n# For the AI countries: the tree of the game\n"
-            f"{real_tree(tree['key'])} = {with_potential(block, 'has_country_flag = ap_ai')}\n")
+            f"{tree['key']} = {with_potential(checks, f'{NOT_AI} {NOT_VANILLA}')}\n"
+            f"\n# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game\n"
+            f"{real_tree(tree['key'])} = {with_potential(block, REAL_TREES)}\n")
 
 
 def render_tradition_categories(game_dir) -> dict[str, str]:
@@ -310,6 +306,36 @@ def render_tree_effects(trees: list[dict]) -> str:
             f"ap_report_picks = {{\n{picks}%s}}\n")
 
 
+def hide_tree(tree: dict) -> str:
+    """The name of the effect that takes the tree of the real traditions out of the tradition window again."""
+    return f"ap_hide_tree_{short(tree)}"
+
+
+def render_received_traditions(trees: list[dict]) -> str:
+    """A tradition that arrives as an item belongs to the tree of the real traditions, which the game then
+    shows among the trees of the player, where it takes the place of one they could adopt. The tree is
+    taken away again. If the game takes its traditions along, they are given back and the tree is left
+    alone from then on: ap_trees_stay. "AP_NOTE" tells the client once which of the two it was."""
+    out = ("\n# A tradition received as an item\n# Scope: country\n"
+           "ap_add_tradition = {\n\tset_country_flag = ap_got_$KEY$\n\tadd_tradition = $KEY$\n}\n")
+    for tree in trees:
+        if tree["kind"] != "normal":
+            continue
+        restore = "".join(
+            f"\t\tif = {{\n\t\t\tlimit = {{ has_country_flag = ap_got_{tradition['key']} "
+            f"NOT = {{ has_tradition = {tradition['key']} }} }}\n"
+            f"\t\t\tset_country_flag = ap_trees_stay\n\t\t\tadd_tradition = {tradition['key']}\n\t\t}}\n"
+            for tradition in tree["traditions"] if "id" in tradition)
+        out += (f"\n# Scope: country\n{hide_tree(tree)} = {{\n"
+                f"\tif = {{\n\t\tlimit = {{ NOT = {{ has_country_flag = ap_trees_stay }} }}\n"
+                f"\t\tremove_tradition_tree = {real_tree(tree['key'])}\n{restore}"
+                f"\t\tif = {{\n\t\t\tlimit = {{ NOT = {{ has_country_flag = ap_tree_note }} }}\n"
+                f"\t\t\tset_country_flag = ap_tree_note\n"
+                f"\t\t\tif = {{ limit = {{ has_country_flag = ap_trees_stay }} log = \"AP_NOTE 2\" }}\n"
+                f"\t\t\telse = {{ log = \"AP_NOTE 1\" }}\n\t\t}}\n\t}}\n}}\n")
+    return out
+
+
 def render_effects(locations: list[dict], items: list[dict]) -> str:
     technologies = of_kind(locations, "technology")
     report = "".join(
@@ -338,6 +364,7 @@ def render_effects(locations: list[dict], items: list[dict]) -> str:
             f"\n# Reports the check that was just researched\n# Scope: country\n"
             f"ap_report_last_check = {{\n{report_last}}}\n"
             + render_tree_effects(data.tradition_trees()) % perks
+            + render_received_traditions(data.tradition_trees())
             + f"\n# Grants the item whose id is in ap_last_item\n# Scope: country\nap_grant_item = {{\n{grant}}}\n")
 
 
@@ -351,11 +378,9 @@ def render_scripted_loc(items: list[dict]) -> str:
            f"{texts('ap_last_item', 'ap_item', [item['id'] for item in items])}\tdefault = ap_item_unknown\n}}\n"
            f"\n# Scope: country\ndefined_text = {{\n\tname = GetAPSenderName\n\trandom = no\n"
            f"{texts('ap_last_sender', 'ap_sender', range(1, MAX_SENDERS + 1))}\tdefault = ap_sender_0\n}}\n"
-           # What the last death took, and what the last Random Event was
+           # What the last death took
            f"\n# Scope: country\ndefined_text = {{\n\tname = GetAPDeathEffect\n\trandom = no\n"
-           f"{texts('ap_death_effect', 'ap_death_effect', DEATH_EFFECT_TEXTS)}\tdefault = ap_death_effect_0\n}}\n"
-           f"\n# Scope: country\ndefined_text = {{\n\tname = GetAPEvent\n\trandom = no\n"
-           f"{texts('ap_event_kind', 'ap_event', range(1, RANDOM_EVENTS + 1))}\tdefault = ap_event_0\n}}\n")
+           f"{texts('ap_death_effect', 'ap_death_effect', DEATH_EFFECT_TEXTS)}\tdefault = ap_death_effect_0\n}}\n")
     return out
 
 
@@ -363,6 +388,8 @@ def render_localisation(language: str) -> str:
     texts = dict(EVENT_TEXT)
     texts.update({f"ap_item_{item['id']}": clean(item["name"]) for item in data.items()})
     for tree in data.normal_trees():
+        # The tree of the real traditions goes by the name of the tree of the game
+        texts[real_tree(tree["key"])] = f"${tree['key']}$"
         for position, tradition in enumerate(tree["traditions"]):
             key = check_tradition(tradition["key"])
             # The text under the name of a tradition has the key <name>_delayed. The tooltip says it all
@@ -415,28 +442,30 @@ def write_check_names(names: dict[int, tuple[str, str]] | None = None, players: 
               render_check_names(data.locations(), language, names, players), encoding="utf-8-sig")
 
 
-def render_session(run: int = 0, items=(), checked=()) -> str:
+def render_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False) -> str:
     """ap_start_run, which the mod calls when a new game starts: the game belongs to the run right away, and
     has what the run has received so far. That is how a player who lost goes on with a new game.
 
     items: every item received so far, in order. All of them are granted again, without their messages:
     technologies, traditions, ascension perk slots and resources. For every Random Event a new one is
-    played, which need not be the same as the first time.
+    played some time into the game, one after the other, which need not be the same as the first time.
     checked: the ids of the locations that are done. Their technologies count as researched.
+    vanilla_traditions: the traditions are not shuffled, the player has the trees of the game.
     """
     lines = []
     if run:
         lines.append(f"\tset_variable = {{ which = ap_run value = {run} }}\n")
+        if vanilla_traditions:
+            # Nothing is received that would make traditions more expensive
+            lines.append(f"\tset_country_flag = {VANILLA_TRADITIONS}\n\tremove_modifier = ap_tradition_cost\n")
         events = 0
         for item in items:
             if item["name"] == data.tables.RANDOM_EVENT:
+                lines.append(f"\tcountry_event = {{ id = ap.23 days = "
+                             f"{REPLAY_FIRST_DAY + REPLAY_DAYS_APART * events} }}\n")
                 events += 1
-                # Without this every one of them would turn out the same
-                lines.append("\treroll_random = yes\n\tap_random_event_roll = yes\n")
             else:
                 lines.append(f"\t{item['effect'].replace('message = yes', 'message = no')}\n")
-        if events:
-            lines.append("\tcountry_event = { id = ap.22 }\n")
         # The game goes on with the items that come after these
         lines.append(f"\tset_variable = {{ which = ap_item_index value = {len(items)} }}\n")
         technologies = {location["id"]: location for location in of_kind(data.locations(), "technology")}
@@ -446,9 +475,39 @@ def render_session(run: int = 0, items=(), checked=()) -> str:
             f"\n# Scope: country\nap_start_run = {{\n{''.join(lines)}}}\n")
 
 
-def write_session(run: int = 0, items=(), checked=()) -> None:
+def write_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False) -> None:
     """Like the names, the game reads this when it starts."""
-    write(MOD_DIR / "common" / "scripted_effects" / SESSION_FILE, render_session(run, items, checked))
+    write(MOD_DIR / "common" / "scripted_effects" / SESSION_FILE,
+          render_session(run, items, checked, vanilla_traditions))
+
+
+def random_event_pool(text: str, names) -> dict[str, int]:
+    """{event: weight} of the random events of some on_actions of the game, from the text of their file."""
+    pool: dict[str, int] = {}
+    for key, opened, closed in pdx.block_spans(text):
+        if key not in names:
+            continue
+        for inner, start, end in pdx.block_spans(text, opened + 1, closed):
+            if inner != "random_events":
+                continue
+            for weight, event in re.findall(r"(\d+)\s*=\s*([\w.]+)", re.sub(r"#.*", "", text[start + 1:end])):
+                # 0 is the chance of no event at all, and a weight of 0 an event that is switched off
+                if event != "0" and int(weight):
+                    pool[event] = max(pool.get(event, 0), int(weight))
+    return pool
+
+
+def render_random_events(game_dir) -> str:
+    """The on_actions the item Random Event fires, each with the events of the game's own lists."""
+    text = "".join(path.read_text(encoding="utf-8-sig", errors="replace")
+                   for path in sorted((game_dir / "common" / "on_actions").glob("*.txt")))
+    out = [HEADER, "# The random events of the game, from its on_actions. Which of them can come up is up to\n"
+                   "# the triggers of the events themselves, as it is when the game brings them up\n"]
+    for name, sources in RANDOM_EVENT_POOLS.items():
+        events = "".join(f"\t\t{weight} = {event}\n"
+                         for event, weight in sorted(random_event_pool(text, sources).items()))
+        out.append(f"\n{name} = {{\n\trandom_events = {{\n{events}\t}}\n}}\n")
+    return "".join(out)
 
 
 def render_icon(source, size: int = ICON_SIZE) -> bytes:
@@ -490,6 +549,7 @@ def build(game_dir) -> None:
     for name, text in render_tradition_categories(game_dir).items():
         write(category_dir / name, text)
     write(MOD_DIR / "interface" / "ap_traditions.gfx", render_tradition_sprites(data.tradition_trees()))
+    write(MOD_DIR / "common" / "on_actions" / RANDOM_EVENTS_FILE, render_random_events(game_dir))
     write(MOD_DIR / "common" / "scripted_effects" / "ap_generated_effects.txt",
           render_effects(locations, data.items()))
     write(MOD_DIR / "common" / "scripted_loc" / "ap_scripted_loc.txt", render_scripted_loc(data.items()))

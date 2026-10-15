@@ -1,10 +1,14 @@
 from typing import Any
 
 from BaseClasses import Item, ItemClassification, Location, LocationProgressType, Region
-from worlds.AutoWorld import World
+from worlds.AutoWorld import WebWorld, World
 
 from . import content, tables
-from .options import Goal, StellarisOptions
+from .options import OPTION_GROUPS, Goal, StellarisOptions
+
+
+class StellarisWeb(WebWorld):
+    option_groups = OPTION_GROUPS
 
 # Technologies of these tiers, tradition trees from this number and ascension perks from this number are
 # the late game, see the option Early Progression
@@ -34,6 +38,7 @@ class StellarisWorld(World):
     slots are shuffled into the multiworld, and found by researching and adopting what took their place."""
     game = "Stellaris"
     topology_present = False
+    web = StellarisWeb()
 
     options_dataclass = StellarisOptions
     options: StellarisOptions
@@ -41,18 +46,23 @@ class StellarisWorld(World):
     item_name_to_id = content.ITEM_NAME_TO_ID
     location_name_to_id = content.LOCATION_NAME_TO_ID
 
+    def locations(self) -> list[dict]:
+        """The locations of this player: without the traditions if they are not shuffled."""
+        return [location for location in content.LOCATIONS
+                if self.options.randomize_traditions or location["kind"] != "tradition"]
+
     def generate_early(self) -> None:
         self.fragments = 0
         self.fragments_required = 0
         if self.options.goal == Goal.option_fragments:
             self.fragments = self.options.fragment_count.value
             self.fragments_required = min(self.options.fragments_required.value, self.fragments)
-        self.locations_required = max(1, len(content.LOCATIONS) * self.options.locations_required.value // 100)
+        self.locations_required = max(1, len(self.locations()) * self.options.locations_required.value // 100)
 
     def create_regions(self) -> None:
         menu = Region("Menu", self.player, self.multiworld)
         self.multiworld.regions.append(menu)
-        for entry in content.LOCATIONS:
+        for entry in self.locations():
             location = StellarisLocation(self.player, entry["name"], entry["id"], menu)
             if self.options.early_progression and is_late(entry):
                 location.progress_type = LocationProgressType.EXCLUDED
@@ -70,21 +80,27 @@ class StellarisWorld(World):
 
     def create_items(self) -> None:
         """One item for every location: everything the player can use, as far as there is room."""
-        room = len(content.LOCATIONS)
+        room = len(self.locations())
         dlcs = self.options.owned_dlc.value
         empire = self.options.empire_type.current_key
         usable = [item for item in content.ITEMS if tables.usable(item, dlcs, empire)]
 
+        # What has to be there comes first: the slots, the goal, every tradition (the trees of the game are
+        # gone, so one that is left out can not be had at all) and every technology that is researched
         names = [tables.PROGRESSIVE_ASCENSION] * tables.ASCENSION_PERK_SLOTS + [tables.FRAGMENT] * self.fragments
-        names += [tables.RANDOM_EVENT] * self.options.random_events.value
+        if self.options.randomize_traditions:
+            names += [item["name"] for item in usable if item["kind"] == "tradition"]
+        # For the tracker, which lists the traditions that can be found
+        self.tradition_items = sorted(item["id"] for item in usable if item["kind"] == "tradition"
+                                      and self.options.randomize_traditions)
         technologies = [item["name"] for item in usable if item["kind"] == "technology"]
-        # The technologies the game only hands out through events go first if there is no room
-        technologies.sort(key=lambda name: (content.ITEMS_BY_NAME[name]["weight"] == 0, self.random.random()))
-        names += technologies[:room - len(names)]
-        traditions = [item["name"] for item in usable if item["kind"] == "tradition"]
-        self.random.shuffle(traditions)
-        tradition_locations = tables.TREE_SLOTS * tables.TRADITIONS_PER_TREE
-        names += traditions[:min(tradition_locations, room - len(names))]
+        names += [name for name in technologies if content.ITEMS_BY_NAME[name]["weight"] != 0]
+        # Then the Random Events, and the technologies the game only hands out through events, which it
+        # still does: as far as there is room
+        names += [tables.RANDOM_EVENT] * self.options.random_events.value
+        rare = [name for name in technologies if content.ITEMS_BY_NAME[name]["weight"] == 0]
+        self.random.shuffle(rare)
+        names = (names + rare)[:room]
         while len(names) < room:
             names.append(self.get_filler_item_name())
 
@@ -103,7 +119,7 @@ class StellarisWorld(World):
 
     def set_rules(self) -> None:
         player = self.player
-        for entry in content.LOCATIONS:
+        for entry in self.locations():
             if entry["kind"] == "perk":
                 # An ascension perk needs a slot
                 self.multiworld.get_location(entry["name"], player).access_rule = \
@@ -124,6 +140,8 @@ class StellarisWorld(World):
             "locations_required": self.locations_required,
             "owned_dlc": sorted(self.options.owned_dlc.value),
             "empire_type": self.options.empire_type.current_key,
+            "randomize_traditions": bool(self.options.randomize_traditions),
+            "tradition_items": self.tradition_items,
             "death_link": bool(self.options.death_link),
             "death_causes": [cause for cause, option in (
                 ("ruler", self.options.death_on_ruler), ("leader", self.options.death_on_leader),

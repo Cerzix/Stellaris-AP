@@ -20,6 +20,7 @@ from typing import Callable
 from . import console
 from .data import EMPIRES
 from .mailbox import Mailbox, item_value
+from .memory import stellaris_pid
 from .paths import RUN_FILE_NAME
 
 # "AP_<WORD>", "AP_<WORD> <number>" or "AP_<WORD> <number> <text>" at the end of a line
@@ -31,9 +32,15 @@ DEATHS = {1: "ruler", 2: "leader", 3: "battle", 4: "colony", 5: "colony"}
 # What the mod reports as "AP_GOAL <number>": what was achieved in the galaxy, as in the option goal
 GOALS = {1: "crisis", 2: "crisis_and_fallen_empires"}
 
+# What the mod reports as "AP_NOTE <number>": something it found out about the game, for the log
+NOTES = {1: "Stellaris: received traditions are kept out of the tradition window",
+         2: "Stellaris: this version of the game keeps the tree of a received tradition in the tradition window"}
+
 RETRIGGER_SECONDS = 5
 MAX_TRIGGER_ATTEMPTS = 5
 FOREGROUND_SETTLE_SECONDS = 2
+# How much of the start of the log is kept, to tell a new log from the one before it
+HEAD_BYTES = 64
 
 
 class LogTailer:
@@ -41,7 +48,17 @@ class LogTailer:
         self.path = path
         self.offset = 0
         self.partial = b""
+        self.head = b""
         self.restarted = False
+
+    def skip(self) -> None:
+        """Leaves out what is in the log now: it is of a game that is not running any more."""
+        try:
+            with open(self.path, "rb") as f:
+                self.head = f.read(HEAD_BYTES)
+            self.offset = self.path.stat().st_size
+        except OSError:
+            pass
 
     def poll(self) -> list[tuple[str, int | None, str]]:
         """Returns the (word, number, text) of every new AP line. Sets restarted if the game started a fresh log."""
@@ -50,15 +67,22 @@ class LogTailer:
             size = self.path.stat().st_size
         except OSError:
             return []
-        if size < self.offset:
-            self.offset = 0
-            self.partial = b""
-            self.restarted = True
-        if size == self.offset:
+        try:
+            with open(self.path, "rb") as f:
+                head = f.read(HEAD_BYTES)
+                # Every line of the log starts with the time, so a new log starts differently. Its size alone
+                # does not tell: it can have outgrown the old one already
+                if size < self.offset or not head.startswith(self.head):
+                    self.offset = 0
+                    self.partial = b""
+                    self.restarted = True
+                self.head = head
+                if size == self.offset:
+                    return []
+                f.seek(self.offset)
+                data = f.read()
+        except OSError:
             return []
-        with open(self.path, "rb") as f:
-            f.seek(self.offset)
-            data = f.read()
         self.offset += len(data)
         *lines, self.partial = (self.partial + data).split(b"\n")
         messages = []
@@ -91,7 +115,8 @@ class Bridge:
                  deaths_per_doom: int = 0, doom: str = "cracked",
                  on_command: Callable[[int], None] | None = None, run: int = 0,
                  on_death: Callable[[int, str], None] | None = None, death_effect: str = "random",
-                 doom_capital: bool = False, pick: Callable[[list], str] = random.choice):
+                 doom_capital: bool = False, pick: Callable[[list], str] = random.choice,
+                 game_running: Callable[[], bool] | None = None):
         """delivery: "memory", "console" or "manual" (the player runs the file).
         deaths_per_doom: after this many DeathLink deaths a colony is destroyed, 0 for never.
         doom: what happens to the colony, a key of mailbox.DOOM_CODES.
@@ -99,7 +124,9 @@ class Bridge:
         death_effect: what a death that is not a doom takes: "none", "leader", "fleet" or "random".
         on_command: called with the number of an option the player picked in the menu in game.
         run: the number of the run that is played. Checks of a save of another run are dropped, see mailbox.py.
-        on_death: called with the kind of a death in the player's empire (see DEATHS) and the name of who died."""
+        on_death: called with the kind of a death in the player's empire (see DEATHS) and the name of who died.
+        game_running: whether Stellaris is running. Left out, it is looked up for the delivery "memory", the one
+        that reaches into the game, and taken as running for the others."""
         self.on_death = on_death
         # What the save that is loaded has achieved, see GOALS. Like its checks, it only counts once the save
         # has told which run it belongs to
@@ -120,6 +147,12 @@ class Bridge:
         self.doom = doom
         self.deaths = 0
         self.tailer = LogTailer(user_dir / "logs" / "game.log")
+        if game_running is None:
+            game_running = (lambda: stellaris_pid() is not None) if delivery == "memory" else (lambda: True)
+        if not game_running():
+            # The game leaves its log behind when it is closed. Without the game running, what is in it is
+            # the last time it was played, and no game that is loaded now
+            self.tailer.skip()
         self.run_file = user_dir / RUN_FILE_NAME
         self.on_check = on_check
         self.run_mode = run_mode
@@ -170,6 +203,8 @@ class Bridge:
         messages = self.tailer.poll()
         if self.tailer.restarted:
             self.in_game = False
+        # What the log already held is the game that is running, of which only where it is now matters
+        say = (lambda text: None) if self.backlog else self.say
         for word, number, text in messages:
             if word == "HELLO":
                 # A game was started or loaded, it may be behind on items
@@ -183,11 +218,11 @@ class Bridge:
                 self.goals = set()
                 if self.mailbox:
                     self.mailbox.reset()
-                self.say("Stellaris: game loaded")
+                say("Stellaris: game loaded")
             elif word == "ACK" and number is not None:
                 self.acked = number
                 self.attempts = 0
-                self.say(f"Stellaris: {number} item(s) applied")
+                say(f"Stellaris: {number} item(s) applied")
             elif word == "CHECK" and number is not None and number not in self.checked:
                 if self.mailbox and getattr(self.mailbox, "run", 0):
                     self.pending_checks.append(number)
@@ -203,12 +238,16 @@ class Bridge:
                 self.game_dlcs.add(number)
             elif word == "EMPIRE" and number in (1, 2, 3):
                 self.game_empire = EMPIRES[number - 1]
-                self.say(f"Stellaris: {self.game_empire} empire, {len(self.game_dlcs)} of the DLCs that matter")
+                say(f"Stellaris: {self.game_empire} empire, {len(self.game_dlcs)} of the DLCs that matter")
             elif word == "DEATH" and number in DEATHS and self.on_death and not self.backlog:
                 # A name the game could not fill in stays in its brackets
                 self.on_death(number, "" if "[" in text else text)
+            elif word == "NOTE" and number in NOTES and not self.backlog:
+                self.say(NOTES[number])
             elif word == "CMD" and number is not None and self.on_command and not self.backlog:
                 self.on_command(number)
+        if self.backlog and self.in_game:
+            self.say("Stellaris: a game is already loaded" + (f", a {self.game_empire} empire" if self.game_empire else ""))
         self.backlog = False
         if self.mailbox:
             self.mailbox.poll([item_value(item["id"], item.get("sender", 0)) for item in self.items])

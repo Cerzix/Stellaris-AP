@@ -24,7 +24,7 @@ DOCS_DIR = stellaris_user_dir() / "logs" / "script_documentation"
 # Keys of the script syntax itself, which are neither effects nor triggers
 EVENT_KEYS = {"namespace", "event", "country_event", "id", "hide_window", "is_triggered_only", "immediate",
               "trigger", "limit", "which", "value", "tech", "message", "NOT",
-              "title", "desc", "picture", "location", "option", "name", "CLASS", "days",
+              "title", "desc", "picture", "location", "option", "name", "CLASS", "days", "flag", "KEY", "on_action",
               "defined_text", "random", "text", "localization_key", "default",
               "modifier", "multiplier",
               # Scopes
@@ -106,7 +106,9 @@ class DataTest(unittest.TestCase):
                 # Items: the traditions of the normal trees, without the adoption and finish bonus
                 self.assertEqual("id" in tradition, tree["kind"] == "normal" and tradition["role"] == "tradition")
                 if "id" in tradition:
-                    self.assertEqual(items[tradition["id"]]["effect"], f"add_tradition = {tradition['key']}")
+                    self.assertEqual(items[tradition["id"]]["effect"],
+                                     f"ap_add_tradition = {{ KEY = {tradition['key']} }} "
+                                     f"ap_hide_tree_{tree['key'].removeprefix('tradition_')} = yes")
         self.assertEqual(sum(item["kind"] == "tradition" for item in data.items()), 100)
 
     def test_dlcs_and_empires(self):
@@ -523,7 +525,7 @@ class ScriptTest(unittest.TestCase):
     def test_deaths_are_reported_but_not_the_ones_of_a_doom(self):
         events = dict((pdx.get(event, "id"), event) for _, _, event in pdx.parse(mod_script("events"))
                       if isinstance(event, list))
-        on_actions = dict((key, pdx.values(pdx.get(value, "events")))
+        on_actions = dict((key, pdx.values(pdx.get(value, "events", [])))
                           for key, _, value in pdx.parse(mod_script("common/on_actions")))
         text = mod_script("events")
         for on_action, event, numbers in (("on_leader_death", "ap.30", (1, 2)),
@@ -568,32 +570,54 @@ class ScriptTest(unittest.TestCase):
     def test_random_events(self):
         effects = pdx.parse(strip_comments(mod_script("common/scripted_effects")))
         named = dict((key, value) for key, _, value in effects)
-        self.assertEqual(named["ap_random_event"], [("ap_random_event_roll", "=", "yes"),
-                                                    ("country_event", "=", [("id", "=", "ap.21")])])
-        outcomes = [value for _, _, value in pdx.get(named["ap_random_event_roll"], "random_list")]
-        kinds = [int(pdx.get(pdx.get(outcome, "set_variable"), "value")) for outcome in outcomes]
-        self.assertEqual(kinds, list(range(1, build_mod.RANDOM_EVENTS + 1)))
-        # A new game does not start by losing a fleet to an event that is played again
-        for outcome in outcomes:
-            guarded = pdx.get(outcome, "modifier") == [("factor", "=", "0"), ("has_country_flag", "=", "ap_starting_run")]
-            self.assertEqual(guarded, "ap_death_fleet" in repr(outcome))
-        setup = named["ap_setup_player"]
-        start = next(value for key, _, value in setup if key == "if" and ("ap_start_run", "=", "yes") in value)
-        order = [entry for entry in start if entry[0] != "limit"]
-        self.assertEqual(order[-3:], [("set_country_flag", "=", "ap_starting_run"), ("ap_start_run", "=", "yes"),
-                                      ("remove_country_flag", "=", "ap_starting_run")])
-        names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
-        modifiers = dict((key, value) for key, _, value in pdx.parse_file(
-            MOD_DIR / "common" / "static_modifiers" / "ap_static_modifiers.txt"))
-        for kind, outcome in zip(kinds, outcomes):
-            self.assertIn(f" ap_event_{kind}:0 ", names)
-            modifier = pdx.get(pdx.get(outcome, "add_modifier", []), "modifier")
-            if modifier:
-                self.assertIn(modifier, modifiers)
-                self.assertIn(f" {modifier}:0 ", names)
+        outcomes = [value for _, _, value in pdx.get(named["ap_random_event"], "random_list")]
+        fired = [pdx.get(pdx.get(outcome, "fire_on_action") or pdx.get(pdx.get(outcome, "random_owned_planet"),
+                                                                       "fire_on_action"), "on_action")
+                 for outcome in outcomes]
+        self.assertEqual(sorted(fired), sorted(build_mod.RANDOM_EVENT_POOLS), "the game's own events, nothing made up")
+        # An empire without a colony gets an event of the empire
+        colony = next(outcome for outcome in outcomes if pdx.get(outcome, "random_owned_planet"))
+        self.assertEqual(pdx.get(pdx.get(colony, "modifier"), "factor"), "0")
+        on_actions = dict((key, value) for key, _, value in pdx.parse(mod_script("common/on_actions")))
+        for name in build_mod.RANDOM_EVENT_POOLS:
+            self.assertTrue(pdx.get(on_actions[name], "random_events"), name)
+        script = mod_script("events") + mod_script("common/scripted_effects")
+        for gone in ("ap.21", "ap.22", "ap_event_kind", "ap_random_event_roll"):
+            self.assertNotIn(gone, script)
         item = next(item for item in data.items() if item["name"] == data.tables.RANDOM_EVENT)
         self.assertEqual((item["effect"], item["count"]), ("ap_random_event = yes", 0))
         self.assertNotIn(item["id"], data.item_pool(random.Random(1)), "only in a multiworld that asks for them")
+
+    def test_a_death_takes_the_ruler_only_if_no_other_leader_is_left(self):
+        effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
+        leader = effects["ap_death_leader"]
+        first, second = pdx.get(leader, "if"), pdx.get(leader, "else_if")
+        self.assertEqual(pdx.get(pdx.get(first, "random_owned_leader"), "limit"), [("is_ruler", "=", "no")])
+        self.assertEqual(pdx.get(pdx.get(second, "random_owned_leader"), "limit"), [("is_ruler", "=", "yes")])
+        for block in (first, second):
+            # Not a death to send on in turn
+            keys = [entry[0] for entry in block]
+            self.assertLess(keys.index("set_country_flag"), keys.index("random_owned_leader"))
+            self.assertLess(keys.index("random_owned_leader"), keys.index("remove_country_flag"))
+
+    def test_a_received_tradition_does_not_keep_a_tree(self):
+        effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
+        self.assertEqual(effects["ap_add_tradition"], [("set_country_flag", "=", "ap_got_$KEY$"),
+                                                       ("add_tradition", "=", "$KEY$")])
+        grant = strip_comments(mod_script("common/scripted_effects"))
+        for tree in data.normal_trees():
+            hide = pdx.get(effects[build_mod.hide_tree(tree)], "if")
+            self.assertEqual(pdx.get(hide, "limit"), [("NOT", "=", [("has_country_flag", "=", "ap_trees_stay")])])
+            self.assertEqual(pdx.get(hide, "remove_tradition_tree"), build_mod.real_tree(tree["key"]))
+            # If the game takes the traditions along with the tree, every one that was received comes back
+            restored = [pdx.get(block, "add_tradition") for key, _, block in hide if key == "if"]
+            received = [tradition["key"] for tradition in tree["traditions"] if "id" in tradition]
+            self.assertEqual([key for key in restored if key], received)
+            for key in received:
+                self.assertIn(f"ap_add_tradition = {{ KEY = {key} }} {build_mod.hide_tree(tree)} = yes", grant)
+        names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
+        tree = data.normal_trees()[0]
+        self.assertIn(f' {build_mod.real_tree(tree["key"])}:0 "${tree["key"]}$"', names)
 
     def test_a_new_game_starts_with_the_unlocks_of_its_run(self):
         items = {item["name"]: item for item in data.items()}
@@ -606,18 +630,28 @@ class ScriptTest(unittest.TestCase):
         self.assertEqual(start[0], ("set_variable", "=", [("which", "=", "ap_run"), ("value", "=", "77")]))
         self.assertEqual([entry for entry in start if entry[0] == "ap_add_ascension_slot"],
                          [("ap_add_ascension_slot", "=", "yes")] * 2)
-        self.assertIn(("add_tradition", "=", tradition["effect"].split(" = ")[1]), start)
+        key = tradition["effect"].split("KEY = ")[1].split()[0]
+        self.assertIn(("ap_add_tradition", "=", [("KEY", "=", key)]), start)
+        self.assertEqual(sum(entry[0].startswith("ap_hide_tree_") for entry in start), 1)
         given = [pdx.get(value, "tech") for key, _, value in start if key == "give_technology"]
         self.assertEqual(given, [technology["effect"].split("tech = ")[1].split()[0], "ap_check_3"],
                          "the technology received, and the one of the location that is done")
         # Resources too, and a new random event for every one received, without their messages
         self.assertEqual(sum(key == "add_resource" for key, _, _ in start), 2, "the cache and the fragment")
         keys = [key for key, _, _ in start]
-        self.assertEqual(keys.count("ap_random_event_roll"), 1)
-        self.assertEqual(keys[keys.index("ap_random_event_roll") - 1], "reroll_random")
-        self.assertNotIn("ap_random_event", keys, "that one shows a message")
-        self.assertIn(("country_event", "=", [("id", "=", "ap.22")]), start)
-        self.assertNotIn("ap.22", build_mod.render_session(77, [technology], []), "only if there was one")
+        self.assertNotIn("ap_random_event", keys, "not all at once on the first day")
+        self.assertIn(("country_event", "=", [("id", "=", "ap.23"), ("days", "=", str(build_mod.REPLAY_FIRST_DAY))]),
+                      start)
+        two = build_mod.render_session(77, [items["Random Event"]] * 2, [])
+        self.assertIn(f"days = {build_mod.REPLAY_FIRST_DAY + build_mod.REPLAY_DAYS_APART} }}", two, "one after the other")
+        self.assertNotIn("ap.23", build_mod.render_session(77, [technology], []), "only if there was one")
+        self.assertIn("id = ap.23", mod_script("events"))
+        # Traditions that are not shuffled: the player has the trees of the game
+        self.assertNotIn(build_mod.VANILLA_TRADITIONS, build_mod.render_session(77, received, [3]))
+        vanilla = dict((key, value) for key, _, value in pdx.parse(
+            build_mod.render_session(77, [], [], vanilla_traditions=True)))["ap_start_run"]
+        self.assertIn(("set_country_flag", "=", build_mod.VANILLA_TRADITIONS), vanilla)
+        self.assertIn(("remove_modifier", "=", "ap_tradition_cost"), vanilla)
         self.assertNotIn("message = yes", build_mod.render_session(77, received, [3]))
         self.assertIn(("set_variable", "=", [("which", "=", "ap_item_index"), ("value", "=", "7")]), start,
                       "the game goes on after everything received")
@@ -650,7 +684,7 @@ class ScriptTest(unittest.TestCase):
             ("is_country_type", "=", "awakened_fallen_empire")])])])
         self.assertEqual(pdx.get(fallen, "log"), '"AP_GOAL 2"')
         self.assertIn(("ap_report_goals", "=", "yes"), effects["ap_setup_player"], "also when a save is loaded")
-        on_actions = dict((key, pdx.values(pdx.get(value, "events")))
+        on_actions = dict((key, pdx.values(pdx.get(value, "events", [])))
                           for key, _, value in pdx.parse(mod_script("common/on_actions")))
         self.assertIn("ap.6", on_actions["on_monthly_pulse_country"])
 
@@ -695,7 +729,24 @@ class GameFilesTest(unittest.TestCase):
     def test_on_actions_exist(self):
         vanilla = set(top_level_keys(self.vanilla("common/on_actions")))
         for on_action in top_level_keys(mod_script("common/on_actions")):
-            self.assertIn(on_action, vanilla)
+            # The mod fires its own by itself
+            if on_action not in build_mod.RANDOM_EVENT_POOLS:
+                self.assertIn(on_action, vanilla)
+
+    def test_random_events_are_the_ones_of_the_game(self):
+        """Fails when a game update changes its lists of random events: run build_mod again."""
+        generated = (MOD_DIR / "common" / "on_actions" / build_mod.RANDOM_EVENTS_FILE).read_text(encoding="utf-8")
+        self.assertEqual(generated, build_mod.render_random_events(GAME_DIR))
+        events = self.vanilla("events")
+        vanilla = set(top_level_keys(self.vanilla("common/on_actions")))
+        pools = dict((key, pdx.get(value, "random_events")) for key, _, value in pdx.parse(generated))
+        self.assertEqual(set(pools), set(build_mod.RANDOM_EVENT_POOLS))
+        for name, sources in build_mod.RANDOM_EVENT_POOLS.items():
+            self.assertLessEqual(set(sources), vanilla, "an on_action of the game is gone")
+            self.assertGreater(len(pools[name]), 10, name)
+            for weight, _, event in pools[name]:
+                self.assertGreater(int(weight), 0)
+                self.assertRegex(events, rf"\bid\s*=\s*{re.escape(event)}\b", "the game has no such event")
 
     def test_data_is_up_to_date(self):
         """Fails after a game update, until python -m stellaris_ap.extract was run."""
@@ -755,12 +806,18 @@ class GameFilesTest(unittest.TestCase):
                 MOD_DIR / "common" / "tradition_categories" / tree["file"]))
             real = mine[build_mod.real_tree(tree["key"])]
             self.assertEqual(pdx.get(real, "potential"),
-                             [("has_country_flag", "=", "ap_ai")] + pdx.get(original, "potential", []), tree["key"])
+                             [("OR", "=", [("has_country_flag", "=", "ap_ai"),
+                                           ("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)])]
+                             + pdx.get(original, "potential", []), tree["key"])
+            checks = mine[tree["key"]]
+            self.assertEqual(pdx.get(checks, "potential")[:2],
+                             [("NOT", "=", [("has_country_flag", "=", "ap_ai")]),
+                              ("NOT", "=", [("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)])], tree["key"])
             self.assertEqual([entry for entry in real if entry[0] != "potential"],
                              [entry for entry in original if entry[0] != "potential"], tree["key"])
             # The player's tree: the same, with locations as its traditions
             player = mine[tree["key"]]
-            self.assertEqual(pdx.get(player, "potential"), NOT_AI + pdx.get(original, "potential", []), tree["key"])
+            self.assertEqual(pdx.get(player, "potential")[2:], pdx.get(original, "potential", []), tree["key"])
             self.assertEqual([pdx.get(player, "adoption_bonus").strip('"')]
                              + pdx.values(pdx.get(player, "traditions"))
                              + [pdx.get(player, "finish_bonus").strip('"')], build_mod.picked_keys(tree))
@@ -844,6 +901,16 @@ class GameFilesTest(unittest.TestCase):
         hidden = (HIDDEN_CONSOLE_MOD_DIR / "interface" / "console.gui").read_text(encoding="utf-8")
         self.assertEqual(normalise(hidden), normalise(vanilla))
         self.assertIn("position = { x = -5000 y = -5000 }", hidden)
+
+
+class StartOfAGameTest(unittest.TestCase):
+    def test_leaders_the_game_throws_away_at_the_start_are_no_deaths(self):
+        effects = (MOD_DIR / "common" / "scripted_effects" / "ap_effects.txt").read_text(encoding="utf-8")
+        events = (MOD_DIR / "events" / "ap_events.txt").read_text(encoding="utf-8")
+        setup = effects[effects.index("set_country_flag = ap_new_game"):effects.index("ap_mailbox_ready")]
+        self.assertRegex(setup, r"set_timed_country_flag = \{ flag = ap_starting days = \d+ \}")
+        leader = events[events.index("id = ap.30"):events.index("id = ap.31")]
+        self.assertIn("NOT = { has_country_flag = ap_starting }", leader[:leader.index("immediate")])
 
 
 @unittest.skipUnless((DOCS_DIR / "effects.log").is_file(), "no script documentation, run script_docs in the console")

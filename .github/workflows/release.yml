@@ -48,7 +48,7 @@ jobs:
           $folder = New-Item -ItemType Directory "release/$name"
           # Everything the client and the game need, and nothing else
           Copy-Item stellaris_ap, mod, data, apworld -Destination $folder -Recurse
-          Copy-Item README.md, CHANGELOG.md, requirements.txt, stellaris.apworld, "Play Stellaris Archipelago.bat" -Destination $folder
+          Copy-Item README.md, CHANGELOG.md, LICENSE, requirements.txt, stellaris.apworld, "Play Stellaris Archipelago.bat" -Destination $folder
           Get-ChildItem $folder -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
           Compress-Archive -Path $folder -DestinationPath "release/$name.zip"
           Get-ChildItem $folder | Select-Object Name
