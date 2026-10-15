@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from Options import Choice, DeathLink, DefaultOnToggle, OptionSet, PerGameCommonOptions, Range, Toggle
+from Options import (Choice, DeathLink, DefaultOnToggle, NamedRange, OptionGroup, OptionSet, PerGameCommonOptions,
+                     Range, Toggle)
 
 from . import content
 
@@ -122,16 +123,16 @@ class DeathEffect(Choice):
     default = 0
 
 
-class DeathsPerDoom(Choice):
-    """DeathLink: how many deaths in the multiworld it takes for a doom, which destroys one of your colonies."""
+class DeathsPerDoom(NamedRange):
+    """DeathLink: how many deaths in the multiworld it takes for a doom, which destroys one of your colonies.
+    0 is never."""
     display_name = "Deaths per Doom"
-    option_every_death = 1
-    option_every_2_deaths = 2
-    option_every_3_deaths = 3
-    option_every_5_deaths = 5
-    option_every_10_deaths = 10
-    option_never = 0
+    range_start = 0
+    range_end = 50
     default = 3
+    # The names this had when it was a list to pick from, so that a YAML of then still works
+    special_range_names = {"never": 0, "every_death": 1, "every_2_deaths": 2, "every_3_deaths": 3,
+                           "every_5_deaths": 5, "every_10_deaths": 10}
 
 
 class Doom(Choice):
@@ -148,6 +149,16 @@ class Doom(Choice):
 class DoomCapital(Toggle):
     """DeathLink: whether a doom may strike your capital too. If it is your only planet, that is the end."""
     display_name = "Doom Can Strike the Capital"
+
+
+# The headings the options are sorted under, in the Options Creator and on the website
+OPTION_GROUPS = [
+    OptionGroup("Goal", [Goal, FragmentCount, FragmentsRequired, LocationsRequired]),
+    OptionGroup("Your Game", [OwnedDLC, EmpireType]),
+    OptionGroup("Randomizer", [RandomizeTraditions, EarlyProgression, RandomEvents]),
+    OptionGroup("DeathLink", [DeathLink, DeathOnRuler, DeathOnLeader, DeathOnColony, DeathOnBattle, DeathEffect]),
+    OptionGroup("Doom", [DeathsPerDoom, Doom, DoomCapital]),
+]
 
 
 @dataclass

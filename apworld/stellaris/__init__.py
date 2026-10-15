@@ -1,10 +1,14 @@
 from typing import Any
 
 from BaseClasses import Item, ItemClassification, Location, LocationProgressType, Region
-from worlds.AutoWorld import World
+from worlds.AutoWorld import WebWorld, World
 
 from . import content, tables
-from .options import Goal, StellarisOptions
+from .options import OPTION_GROUPS, Goal, StellarisOptions
+
+
+class StellarisWeb(WebWorld):
+    option_groups = OPTION_GROUPS
 
 # Technologies of these tiers, tradition trees from this number and ascension perks from this number are
 # the late game, see the option Early Progression
@@ -34,6 +38,7 @@ class StellarisWorld(World):
     slots are shuffled into the multiworld, and found by researching and adopting what took their place."""
     game = "Stellaris"
     topology_present = False
+    web = StellarisWeb()
 
     options_dataclass = StellarisOptions
     options: StellarisOptions

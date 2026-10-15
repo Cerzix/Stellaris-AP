@@ -27,6 +27,9 @@ From the first full test in the game.
 - The tracker has tabs: the traditions and perks, the received traditions and each area of research
   on their own, which is much faster to move around than everything at once. The search goes to the
   tab of what it found. Only the traditions that are in the multiworld are listed.
+- The options are sorted under headings in the Options Creator: Goal, Your Game, Randomizer,
+  DeathLink and Doom. `deaths_per_doom` is a number from 0 (never) to 50; the names it had before
+  still work in a YAML.
 - `/status` and the line under the connection show your hint points and what a hint costs, as the
   server counts them.
 
