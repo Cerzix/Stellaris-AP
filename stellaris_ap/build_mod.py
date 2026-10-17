@@ -382,6 +382,8 @@ def render_tree_effects(trees: list[dict]) -> str:
         for slot in range(data.TREE_SLOTS):
             picks += (f"\t\tif = {{\n\t\t\tlimit = {{ check_variable = "
                       f"{{ which = ap_slot_{short(tree)} value = {slot} }} }}\n")
+            # Which tree has which number, for a new save of the run: see render_restore
+            picks += f'\t\t\tlog = "AP_TREE {slot} {tree["key"]}"\n'
             for position, key in enumerate(picked_keys(tree)):
                 picks += (f'\t\t\tif = {{ limit = {{ has_tradition = {key} }} '
                           f'log = "AP_CHECK {data.tradition_location(slot, position)}" }}\n')
@@ -401,7 +403,14 @@ def render_received_traditions() -> str:
             "ap_add_tradition = {\n\tadd_tradition = $KEY$\n}\n")
 
 
-def render_effects(locations: list[dict], items: list[dict]) -> str:
+def ascension_perks(game_dir) -> list[str]:
+    """The keys of the ascension perks of the game, read from its files."""
+    folder = game_dir / "common" / "ascension_perks"
+    return [key for path in sorted(folder.glob("*.txt"))
+            for key, _, _ in pdx.block_spans(path.read_text(encoding="utf-8-sig")) if key.startswith("ap_")]
+
+
+def render_effects(locations: list[dict], items: list[dict], perk_keys=()) -> str:
     technologies = of_kind(locations, "technology")
     report = "".join(
         f'\tif = {{ limit = {{ has_technology = {tech_key(location)} }} log = "AP_CHECK {location["id"]}" }}\n'
@@ -412,6 +421,9 @@ def render_effects(locations: list[dict], items: list[dict]) -> str:
     perks = "".join(
         f'\tif = {{ limit = {{ num_ascension_perks >= {location["number"]} }} log = "AP_CHECK {location["id"]}" }}\n'
         for location in of_kind(locations, "perk"))
+    # Which perks were picked, for a new save of the run: see render_restore
+    perks += "".join(f'\tif = {{ limit = {{ has_ascension_perk = {key} }} log = "AP_PERK 0 {key}" }}\n'
+                     for key in perk_keys)
     grant = "".join(
         f"\tif = {{ limit = {{ check_variable = {{ which = ap_last_item value = {item['id']} }} }} "
         f"{' '.join(item['effect'].split())} }}\n"
@@ -507,7 +519,51 @@ def write_check_names(names: dict[int, tuple[str, str]] | None = None, players: 
               render_check_names(data.locations(), language, names, players), encoding="utf-8-sig")
 
 
-def render_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False) -> str:
+def restored_picks(checked, picks: dict | None, vanilla_traditions: bool = False) -> tuple[list, list]:
+    """What a new save of the run picks again: (ascension perk keys, [(number, tree, tradition keys)]).
+
+    picks: what the saves of the run reported, see Profile.picks. A pick only counts once its location is
+    checked: as many perks as there are perk locations done, and of the tree adopted as each number the
+    traditions whose locations are done, the adoption first. So a save that went another way does not add to it.
+    """
+    picks = picks or {}
+    perks = list(picks.get("perks", []))[:len({location for location in checked if location > data.PERK_ID_BASE})]
+    trees = {tree["key"]: tree for tree in data.tradition_trees()}
+    adopted = []
+    for number, key in sorted((int(number), key) for number, key in picks.get("trees", {}).items()):
+        if vanilla_traditions or key not in trees or not 0 <= number < data.TREE_SLOTS:
+            continue
+        keys = [tradition for position, tradition in enumerate(picked_keys(trees[key]))
+                if data.tradition_location(number, position) in checked]
+        if keys and keys[0] == picked_keys(trees[key])[0]:
+            adopted.append((number, trees[key], keys))
+    return perks, adopted
+
+
+def render_restore(checked, picks: dict | None, vanilla_traditions: bool = False) -> list[str]:
+    """The lines of ap_start_run that pick again what the run picked before. The perks first: the tree of an
+    ascension path needs its perk. Every tree gets the number it had, before its traditions arrive."""
+    perks, adopted = restored_picks(checked, picks, vanilla_traditions)
+    lines = [f"\tadd_ascension_perk = {key}\n" for key in perks]
+    for number, tree, keys in adopted:
+        lines.append(f"\tset_country_flag = ap_tree_{short(tree)}\n"
+                     f"\tset_variable = {{ which = ap_slot_{short(tree)} value = {number} }}\n")
+        lines.extend(f"\tadd_tradition = {key}\n" for key in keys)
+    if adopted:
+        # The next tree gets the number after the last one, and the trees not adopted know it
+        lines.append(f"\tset_variable = {{ which = ap_trees_adopted value = {adopted[-1][0] + 1} }}\n"
+                     "\tap_assign_tree_slots = yes\n")
+    return lines
+
+
+def restored_count(checked, picks: dict | None, vanilla_traditions: bool = False) -> int:
+    """How many perks and traditions a new save picks again. The game reports it as "AP_START <number>"."""
+    perks, adopted = restored_picks(checked, picks, vanilla_traditions)
+    return len(perks) + sum(len(keys) for _, _, keys in adopted)
+
+
+def render_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False,
+                   picks: dict | None = None) -> str:
     """ap_start_run, which the mod calls when a new game starts: the game belongs to the run right away, and
     has what the run has received so far. That is how a player who lost goes on with a new game.
 
@@ -516,6 +572,7 @@ def render_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool 
     played some time into the game, one after the other, which need not be the same as the first time.
     checked: the ids of the locations that are done. Their technologies count as researched.
     vanilla_traditions: the traditions are not shuffled, the player has the trees of the game.
+    picks: the trees and ascension perks picked so far, which the new game picks again: see render_restore.
     """
     lines = []
     if run:
@@ -536,14 +593,18 @@ def render_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool 
         technologies = {location["id"]: location for location in of_kind(data.locations(), "technology")}
         for location in sorted(set(checked) & set(technologies)):
             lines.append(f"\tgive_technology = {{ tech = {tech_key(technologies[location])} message = no }}\n")
+        lines.extend(render_restore(set(checked), picks, vanilla_traditions))
+        # The client compares it with what it knows now: this file is read when the game starts
+        lines.append(f'\tlog = "AP_START {restored_count(set(checked), picks, vanilla_traditions)}"\n')
     return ("# Written by the client for the run that is played, do not edit. Empty while no client runs.\n"
             f"\n# Scope: country\nap_start_run = {{\n{''.join(lines)}}}\n")
 
 
-def write_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False) -> None:
+def write_session(run: int = 0, items=(), checked=(), vanilla_traditions: bool = False,
+                  picks: dict | None = None) -> None:
     """Like the names, the game reads this when it starts."""
     write(MOD_DIR / "common" / "scripted_effects" / SESSION_FILE,
-          render_session(run, items, checked, vanilla_traditions))
+          render_session(run, items, checked, vanilla_traditions, picks))
 
 
 def random_event_pool(text: str, names) -> dict[str, int]:
@@ -622,7 +683,7 @@ def build(game_dir) -> None:
         (game_dir / "common" / "ascension_perks" / ASCENSION_PATHS_FILE).read_text(encoding="utf-8-sig")))
     write(MOD_DIR / "common" / "on_actions" / RANDOM_EVENTS_FILE, render_random_events(game_dir))
     write(MOD_DIR / "common" / "scripted_effects" / "ap_generated_effects.txt",
-          render_effects(locations, data.items()))
+          render_effects(locations, data.items(), ascension_perks(game_dir)))
     write(MOD_DIR / "common" / "scripted_loc" / "ap_scripted_loc.txt", render_scripted_loc(data.items()))
     for language in LANGUAGES:
         write(MOD_DIR / "localisation" / language / f"ap_l_{language}.yml",

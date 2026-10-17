@@ -35,6 +35,9 @@ From the first full test in the game.
 - `/status` and the line under the connection show your hint points and what a hint costs, as the
   server counts them. The log says when they change.
 - The log says what a death from the multiworld takes: a leader, a fleet or nothing.
+- A new save of a run starts with the tradition trees, traditions and ascension perks picked in the
+  saves before, on the first day, so they cannot be picked differently. If Stellaris was started
+  before some of them were picked, the log says to restart it and start the new game again.
 
 ### Fixed
 

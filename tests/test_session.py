@@ -61,7 +61,7 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(names.player(0), "Archipelago")
 
 
-def keep_mod_files(test, write_session=lambda run=0, items=(), checked=(), vanilla_traditions=False: None) -> None:
+def keep_mod_files(test, write_session=lambda run=0, items=(), checked=(), vanilla_traditions=False, picks=None: None) -> None:
     """A session writes what a new game starts with into the mod. Not the session of a test."""
     original = build_mod.write_session
     build_mod.write_session = write_session
@@ -124,7 +124,7 @@ class ServerSessionTest(unittest.TestCase):
         self.addCleanup(setattr, build_mod, "write_check_names", original)
         self.starts = []
         self.vanilla = []
-        keep_mod_files(self, lambda run=0, items=(), checked=(), vanilla_traditions=False: (
+        keep_mod_files(self, lambda run=0, items=(), checked=(), vanilla_traditions=False, picks=None: (
             self.starts.append((run, [item["id"] for item in items], list(checked))),
             self.vanilla.append(vanilla_traditions)))
         self.store = Profiles(self.user_dir / "profiles.json")
@@ -479,6 +479,41 @@ class OfflineSessionTest(unittest.TestCase):
                 self.assertEqual(lines[-1][0], "error", "the commands for testing are gone")
             self.assertEqual(len(profile.sent), 1)
             self.assertEqual(offline.bridge.deaths, 0)
+
+    def test_a_new_save_picks_again_what_the_run_picked(self):
+        with tempfile.TemporaryDirectory() as folder:
+            user_dir = Path(folder)
+            (user_dir / "logs").mkdir()
+            original = build_mod.write_check_names
+            build_mod.write_check_names = lambda names=None, players=None: None
+            self.addCleanup(setattr, build_mod, "write_check_names", original)
+            keep_mod_files(self)
+            written = []
+            original_session = build_mod.write_session
+            build_mod.write_session = lambda *args, **options: written.append(options.get("picks"))
+            self.addCleanup(setattr, build_mod, "write_session", original_session)
+            lines = []
+            profile = Profiles(user_dir / "profiles.json").new_offline()
+            offline = OfflineSession(user_dir, lambda kind, parts: lines.append((kind, app.plain(parts))), profile,
+                                     shuffle, delivery="manual")
+            adopt = data.tradition_location(0, 0)
+            (user_dir / "logs" / "game.log").write_text(
+                f"AP_HELLO\nAP_CHECK {adopt}\nAP_TREE 0 tradition_expansion\nAP_TREE 0 tradition_expansion\n",
+                encoding="utf-8")
+            offline.tick()
+            self.assertEqual(profile.picks, {"trees": {"0": "tradition_expansion"}, "perks": []})
+            self.assertEqual(written[-1], profile.picks, "the next new save picks it again")
+            self.assertEqual(Profiles(user_dir / "profiles.json").get(profile.run).picks, profile.picks, "saved")
+            # A new game that started with a file from before the pick
+            with open(user_dir / "logs" / "game.log", "a", encoding="utf-8") as log:
+                log.write("AP_START 0\n")
+            offline.tick()
+            self.assertEqual(lines[-1][0], "error")
+            self.assertIn("Restart Stellaris", lines[-1][1])
+            with open(user_dir / "logs" / "game.log", "a", encoding="utf-8") as log:
+                log.write("AP_START 1\n")
+            offline.tick()
+            self.assertEqual(lines[-1][0], "info")
 
 
 class AppTest(unittest.TestCase):

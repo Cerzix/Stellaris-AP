@@ -112,7 +112,9 @@ class Bridge:
                  on_command: Callable[[int], None] | None = None, run: int = 0,
                  on_death: Callable[[int, str], None] | None = None, death_effect: str = "random",
                  doom_capital: bool = False, pick: Callable[[list], str] = random.choice,
-                 game_running: Callable[[], bool] | None = None):
+                 game_running: Callable[[], bool] | None = None,
+                 on_pick: Callable[[str, int, str], None] | None = None,
+                 on_start: Callable[[int], None] | None = None):
         """delivery: "memory", "console" or "manual" (the player runs the file).
         deaths_per_doom: after this many DeathLink deaths a colony is destroyed, 0 for never.
         doom: what happens to the colony, a key of mailbox.DOOM_CODES.
@@ -122,8 +124,14 @@ class Bridge:
         run: the number of the run that is played. Checks of a save of another run are dropped, see mailbox.py.
         on_death: called with the kind of a death in the player's empire (see DEATHS) and the name of who died.
         game_running: whether Stellaris is running. Left out, it is looked up for the delivery "memory", the one
-        that reaches into the game, and taken as running for the others."""
+        that reaches into the game, and taken as running for the others.
+        on_pick: called with "tree", its number and its key, or "perk", 0 and its key, for what the save picked.
+        on_start: called when a new game started, with how many picks it picked again (see build_mod.render_restore)."""
         self.on_death = on_death
+        self.on_pick = on_pick
+        self.on_start = on_start
+        # Picks of a save that has not told yet which run it belongs to, like its checks
+        self.pending_picks: list[tuple[str, int, str]] = []
         # What the save that is loaded has achieved, see GOALS. Like its checks, it only counts once the save
         # has told which run it belongs to
         self.goals: set[str] = set()
@@ -214,6 +222,7 @@ class Bridge:
                 self.acked = 0
                 self.attempts = 0
                 self.pending_checks = []
+                self.pending_picks = []
                 self.pending_goals = set()
                 self.goals = set()
                 if self.mailbox:
@@ -234,6 +243,14 @@ class Bridge:
                     self.pending_goals.add(GOALS[number])
                 else:
                     self.goals.add(GOALS[number])
+            elif word in ("TREE", "PERK") and number is not None and text and self.on_pick:
+                pick = (word.lower(), number, text)
+                if self.mailbox and getattr(self.mailbox, "run", 0):
+                    self.pending_picks.append(pick)
+                else:
+                    self.on_pick(*pick)
+            elif word == "START" and number is not None and self.on_start and not self.backlog:
+                self.on_start(number)
             elif word == "DLC" and number is not None:
                 self.game_dlcs.add(number)
             elif word == "EMPIRE" and number in (1, 2, 3):
@@ -259,6 +276,11 @@ class Bridge:
                     if self.mailbox.bound and number not in self.checked:
                         self.checked.add(number)
                         self.on_check(number)
+            if self.pending_picks and getattr(self.mailbox, "bound", None) is not None:
+                pending, self.pending_picks = self.pending_picks, []
+                if self.mailbox.bound:
+                    for pick in pending:
+                        self.on_pick(*pick)
         self.trigger_if_pending()
 
     def trigger_if_pending(self) -> None:

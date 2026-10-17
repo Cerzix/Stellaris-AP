@@ -41,6 +41,28 @@ class Profile:
     def checked(self) -> list[int]:
         return self.state["checked"]
 
+    @property
+    def picks(self) -> dict:
+        """What the saves of the run picked, which a new save picks again: {"trees": {number: tree key},
+        "perks": [ascension perk keys]}. The first save to pick a tree as a number, or a perk, decides."""
+        return self.state.setdefault("picks", {"trees": {}, "perks": []})
+
+    def pick_tree(self, number: int, key: str) -> bool:
+        """Whether that is new."""
+        if str(number) in self.picks["trees"]:
+            return False
+        self.picks["trees"][str(number)] = key
+        self.store.save()
+        return True
+
+    def pick_perk(self, key: str) -> bool:
+        """Whether that is new."""
+        if key in self.picks["perks"]:
+            return False
+        self.picks["perks"].append(key)
+        self.store.save()
+        return True
+
     def check(self, location: int, placement: dict[int, int], slot: int) -> int | None:
         """The id of the item found at the location, the first time it is checked."""
         if location in self.checked or location not in placement:

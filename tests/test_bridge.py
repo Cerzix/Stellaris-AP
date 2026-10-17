@@ -271,6 +271,39 @@ class BridgeTest(unittest.TestCase):
         bridge.tick()
         self.assertEqual(self.checks, [3, 4, 5])
 
+    def test_picks_wait_until_the_save_told_its_run(self):
+        class FakeMailbox:
+            run = 42
+            bound = None
+
+            def reset(self):
+                self.bound = None
+
+            def poll(self, item_ids):
+                pass
+
+        mailbox, picks, starts = FakeMailbox(), [], []
+        bridge = Bridge(self.user_dir, self.checks.append, say=lambda text: None, mailbox=mailbox,
+                        on_pick=lambda *pick: picks.append(pick), on_start=starts.append)
+        bridge.tick()
+        self.log("AP_START 4")
+        self.log("AP_HELLO")
+        self.log("AP_TREE 2 tradition_expansion")
+        self.log("AP_PERK 0 ap_one_vision")
+        bridge.tick()
+        self.assertEqual(starts, [4])
+        self.assertEqual(picks, [], "the save may belong to another run")
+        mailbox.bound = True
+        bridge.tick()
+        self.assertEqual(picks, [("tree", 2, "tradition_expansion"), ("perk", 0, "ap_one_vision")])
+        # A save of another run: its picks are dropped
+        self.log("AP_HELLO")
+        self.log("AP_TREE 0 tradition_discovery")
+        bridge.tick()
+        mailbox.bound = False
+        bridge.tick()
+        self.assertEqual(len(picks), 2)
+
     def test_goals_wait_until_the_save_told_its_run(self):
         class FakeMailbox:
             run = 42

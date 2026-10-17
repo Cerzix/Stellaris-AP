@@ -4,9 +4,11 @@ The checks against the game need a Stellaris install, and its script documentati
 (written to logs/script_documentation by the console command "script_docs").
 """
 import random
+import tempfile
 import re
 import struct
 import zipfile
+from pathlib import Path
 import unittest
 
 from stellaris_ap import build_apworld, build_mod, data, extract, pdx
@@ -241,7 +243,8 @@ class DataTest(unittest.TestCase):
                 elif key == "change_variable":
                     variables[pdx.get(value, "which")] += int(pdx.get(value, "value"))
                 elif key == "log":
-                    logged.append(int(value.strip('"').split()[1]))
+                    if value.strip('"').startswith("AP_CHECK"):
+                        logged.append(int(value.strip('"').split()[1]))
                 else:
                     raise AssertionError(key)
 
@@ -347,8 +350,10 @@ class GeneratedFilesTest(unittest.TestCase):
                          build_mod.render_technologies(self.locations))
 
     def test_effects_are_up_to_date(self):
-        self.assertEqual((MOD_DIR / "common/scripted_effects/ap_generated_effects.txt").read_text(encoding="utf-8"),
-                         build_mod.render_effects(self.locations, data.items()))
+        generated = (MOD_DIR / "common/scripted_effects/ap_generated_effects.txt").read_text(encoding="utf-8")
+        # The ascension perks are read from the game, the ones in the file are taken without it
+        perks = build_mod.ascension_perks(GAME_DIR) if GAME_DIR else re.findall(r'"AP_PERK 0 (\w+)"', generated)
+        self.assertEqual(generated, build_mod.render_effects(self.locations, data.items(), perks))
 
     def test_localisation(self):
         for language in build_mod.LANGUAGES:
@@ -657,6 +662,49 @@ class ScriptTest(unittest.TestCase):
                       "the game goes on after everything received")
         # Without a run nothing happens
         self.assertEqual(pdx.parse(build_mod.render_session())[0], ("ap_start_run", "=", []))
+
+    def test_a_new_game_picks_again_what_the_run_picked(self):
+        trees = {tree["key"]: tree for tree in data.tradition_trees()}
+        expansion, genetics = trees["tradition_expansion"], trees["tradition_genetics"]
+        location = data.tradition_location
+        # Expansion as tree 0 with two traditions, Genetics as tree 2 adopted, tree 1 picked but never checked,
+        # and two of the three perks reported with their locations done
+        checked = [3, location(0, 0), location(0, 1), location(2, 0), data.PERK_ID_BASE + 1, data.PERK_ID_BASE + 2]
+        picks = {"trees": {"0": "tradition_expansion", "1": "tradition_discovery", "2": "tradition_genetics",
+                           "4": "tradition_gone"},
+                 "perks": ["ap_engineered_evolution", "ap_technological_ascendancy", "ap_one_vision"]}
+        start = dict((key, value) for key, _, value in pdx.parse(
+            build_mod.render_session(77, [], checked, picks=picks)))["ap_start_run"]
+        keys = [key for key, _, _ in start]
+        self.assertEqual([value for key, _, value in start if key == "add_ascension_perk"],
+                         ["ap_engineered_evolution", "ap_technological_ascendancy"], "as many as were checked")
+        self.assertLess(keys.index("add_ascension_perk"), keys.index("add_tradition"), "a path's tree needs its perk")
+        self.assertEqual([value for key, _, value in start if key == "add_tradition"],
+                         build_mod.picked_keys(expansion)[:2] + build_mod.picked_keys(genetics)[:1])
+        self.assertIn(("set_country_flag", "=", "ap_tree_expansion"), start)
+        self.assertIn(("set_variable", "=", [("which", "=", "ap_slot_genetics"), ("value", "=", "2")]), start)
+        self.assertNotIn(("set_country_flag", "=", "ap_tree_discovery"), start, "nothing of it was checked")
+        self.assertIn(("set_variable", "=", [("which", "=", "ap_trees_adopted"), ("value", "=", "3")]), start)
+        self.assertEqual(keys[-2:], ["ap_assign_tree_slots", "log"], "the trees not adopted get the next number")
+        self.assertEqual(start[-1], ("log", "=", '"AP_START 5"'))
+        self.assertEqual(build_mod.restored_count(set(checked), picks), 5)
+        # Traditions that are not shuffled have no locations to pick again, perks do
+        vanilla = build_mod.render_session(77, [], checked, vanilla_traditions=True, picks=picks)
+        self.assertNotIn("add_tradition", vanilla)
+        self.assertIn("add_ascension_perk = ap_engineered_evolution", vanilla)
+        self.assertIn('log = "AP_START 0"', build_mod.render_session(77, [], []))
+
+    def test_the_game_reports_its_trees_and_perks(self):
+        effects = build_mod.render_effects(data.locations(), data.items(), ["ap_one_vision"])
+        self.assertIn('log = "AP_PERK 0 ap_one_vision"', effects)
+        for tree in data.tradition_trees():
+            for number in range(data.TREE_SLOTS):
+                self.assertIn(f'log = "AP_TREE {number} {tree["key"]}"', effects)
+        with tempfile.TemporaryDirectory() as folder:
+            perks = Path(folder) / "common" / "ascension_perks"
+            perks.mkdir(parents=True)
+            (perks / "00_a.txt").write_text("@x = 1\nap_one = {\n}\nap_two = { a = b }\n", encoding="utf-8")
+            self.assertEqual(build_mod.ascension_perks(Path(folder)), ["ap_one", "ap_two"])
 
     def test_only_a_new_game_starts_the_run(self):
         effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))

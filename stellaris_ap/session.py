@@ -75,7 +75,8 @@ class Session:
         self.bridge = Bridge(self.user_dir, self.on_check, delivery=self.delivery, deaths_per_doom=deaths_per_doom,
                              doom=doom, death_effect=death_effect, doom_capital=doom_capital,
                              on_command=self.on_menu, run=self.profile.run, on_death=self.on_game_death,
-                             say=lambda text: self.log("game", text))
+                             say=lambda text: self.log("game", text), on_pick=self.on_pick,
+                             on_start=self.on_new_game)
 
     def tick(self) -> None:
         if self.bridge:
@@ -93,10 +94,27 @@ class Session:
         """Writes what a new game of the run starts with: the run, its unlocks so far, and the checks done."""
         if self.profile:
             build_mod.write_session(self.profile.run, self.start_items(), self.profile.checked,
-                                    vanilla_traditions=not self.shuffled_traditions)
+                                    vanilla_traditions=not self.shuffled_traditions, picks=self.profile.picks)
 
     def on_check(self, location: int) -> None:
         raise NotImplementedError
+
+    def on_pick(self, kind: str, number: int, key: str) -> None:
+        """A tree the save adopted as a number, or an ascension perk it picked: a new save picks it again."""
+        if self.profile and (self.profile.pick_tree(number, key) if kind == "tree" else self.profile.pick_perk(key)):
+            self.write_start()
+
+    def on_new_game(self, restored: int) -> None:
+        """A new game of the run started, and picked again that many traditions and perks of the run."""
+        if not self.profile:
+            return
+        known = build_mod.restored_count(set(self.profile.checked), self.profile.picks, not self.shuffled_traditions)
+        if restored < known:
+            self.log("error", f"This new game started with {restored} of the {known} traditions and ascension perks "
+                              "picked so far: Stellaris read them when it started. Restart Stellaris, then start the "
+                              "new game again.")
+        elif restored:
+            self.log("info", f"The new game picked your {restored} traditions and ascension perks again.")
 
     def on_game_death(self, number: int, name: str) -> None:
         """Someone or something died in the player's empire."""
