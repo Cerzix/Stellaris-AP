@@ -7,7 +7,7 @@ tradition_domestication = {
 	finish_bonus = "tr_ap_domestication_finish"
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_domestication_adopt ap_tree_slot_free = yes }
 		has_grand_archive_dlc = yes
 	}
 
@@ -50,7 +50,7 @@ tradition_ap_real_domestication = {
 	finish_bonus = "tr_domestication_finish"
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_domestication_adopt ap_tree_slot_free = yes }
 		has_grand_archive_dlc = yes
 	}
 

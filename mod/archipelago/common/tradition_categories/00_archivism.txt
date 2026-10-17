@@ -7,7 +7,7 @@ tradition_archivism = {
 	finish_bonus = "tr_ap_archivism_finish"
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_archivism_adopt ap_tree_slot_free = yes }
 		has_grand_archive_dlc = yes
 	}
 
@@ -56,7 +56,7 @@ tradition_ap_real_archivism = {
 	finish_bonus = "tr_archivism_finish"
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_archivism_adopt ap_tree_slot_free = yes }
 		has_grand_archive_dlc = yes
 	}
 

@@ -599,22 +599,26 @@ class ScriptTest(unittest.TestCase):
             self.assertLess(keys.index("set_country_flag"), keys.index("random_owned_leader"))
             self.assertLess(keys.index("random_owned_leader"), keys.index("remove_country_flag"))
 
-    def test_a_received_tradition_waits_until_seven_trees_are_adopted(self):
+    def test_a_received_tradition_is_added_right_away(self):
         effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
-        self.assertEqual(effects["ap_add_tradition"], [("set_country_flag", "=", "ap_got_$KEY$"),
-                                                       ("set_country_flag", "=", "ap_traditions_waiting"),
-                                                       ("ap_release_traditions", "=", "yes")])
-        release = pdx.get(effects["ap_release_traditions"], "if")
-        self.assertEqual(pdx.get(release, "limit"), [("has_country_flag", "=", "ap_traditions_waiting"),
-                                                     ("num_tradition_categories", ">=", str(data.TREE_SLOTS))])
-        added = [pdx.get(block, "add_tradition") for key, _, block in release if key == "if"]
-        received = [item["effect"].split("KEY = ")[1].split()[0] for item in data.items() if item["kind"] == "tradition"]
-        self.assertEqual(sorted(added), sorted(received))
+        self.assertEqual(effects["ap_add_tradition"], [("add_tradition", "=", "$KEY$")])
         self.assertNotIn("remove_tradition_tree", mod_script("common/scripted_effects"))
-        self.assertIn("ap_release_traditions = yes", mod_script("events"))
-        names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
-        tree = data.normal_trees()[0]
-        self.assertIn(f' {build_mod.real_tree(tree["key"])}:0 "${tree["key"]}$"', names)
+
+    def test_seven_trees_are_counted_by_the_mod(self):
+        """The game would count received traditions as trees: it lets an empire have as many as there can be, and
+        the mod stops it at seven adopted ones."""
+        defines = dict((key, value) for key, _, value in pdx.parse_file(MOD_DIR / "common/defines/ap_defines.txt"))
+        self.assertEqual(defines["NGameplay"], [("TRADITION_CATEGORIES_MAX", "=",
+                                                 str(data.TREE_SLOTS + len(data.normal_trees())))])
+        trigger = dict((key, value) for key, _, value in pdx.parse_file(
+            MOD_DIR / "common/scripted_triggers/ap_triggers.txt"))["ap_tree_slot_free"]
+        counted = pdx.get(pdx.get(trigger, "NOT"), "calc_true_if")
+        self.assertEqual(counted[0], ("amount", ">=", str(data.TREE_SLOTS)))
+        adopted = {value for key, _, value in counted[1:] if key == "has_tradition"}
+        for tree in data.tradition_trees():
+            self.assertIn(build_mod.adoption(tree), adopted, "the AI's trees, and the ascension paths")
+            if tree["kind"] == "normal":
+                self.assertIn(build_mod.check_tradition(build_mod.adoption(tree)), adopted, "the player's trees")
 
     def test_a_new_game_starts_with_the_unlocks_of_its_run(self):
         items = {item["name"]: item for item in data.items()}
@@ -801,30 +805,66 @@ class GameFilesTest(unittest.TestCase):
             mine = dict((key, value) for key, _, value in pdx.parse_file(
                 MOD_DIR / "common" / "tradition_categories" / tree["file"]))
             real = mine[build_mod.real_tree(tree["key"])]
+            adopt = build_mod.adoption(tree)
             self.assertEqual(pdx.get(real, "potential"),
                              [("OR", "=", [("has_country_flag", "=", "ap_ai"),
-                                           ("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)])]
+                                           ("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)]),
+                              ("OR", "=", [("has_tradition", "=", adopt), ("ap_tree_slot_free", "=", "yes")])]
                              + pdx.get(original, "potential", []), tree["key"])
             checks = mine[tree["key"]]
-            self.assertEqual(pdx.get(checks, "potential")[:2],
+            self.assertEqual(pdx.get(checks, "potential")[:3],
                              [("NOT", "=", [("has_country_flag", "=", "ap_ai")]),
-                              ("NOT", "=", [("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)])], tree["key"])
+                              ("NOT", "=", [("has_country_flag", "=", build_mod.VANILLA_TRADITIONS)]),
+                              ("OR", "=", [("has_tradition", "=", build_mod.check_tradition(adopt)),
+                                           ("ap_tree_slot_free", "=", "yes")])], tree["key"])
             self.assertEqual([entry for entry in real if entry[0] != "potential"],
                              [entry for entry in original if entry[0] != "potential"], tree["key"])
             # The player's tree: the same, with locations as its traditions
             player = mine[tree["key"]]
-            self.assertEqual(pdx.get(player, "potential")[2:], pdx.get(original, "potential", []), tree["key"])
+            self.assertEqual(pdx.get(player, "potential")[3:], pdx.get(original, "potential", []), tree["key"])
             self.assertEqual([pdx.get(player, "adoption_bonus").strip('"')]
                              + pdx.values(pdx.get(player, "traditions"))
                              + [pdx.get(player, "finish_bonus").strip('"')], build_mod.picked_keys(tree))
             self.assertEqual(pdx.get(player, "tree_template"), pdx.get(original, "tree_template"))
 
     def test_the_game_has_seven_tradition_trees_and_eight_ascension_perks(self):
-        """The limits of the game stay as they are. The locations are counted with them."""
-        self.assertFalse((MOD_DIR / "common" / "defines").exists())
+        """The locations are counted with the limits of the game. The mod keeps the one of the trees itself."""
         vanilla = (GAME_DIR / "common" / "defines" / "00_defines.txt").read_text(encoding="utf-8-sig", errors="replace")
         self.assertRegex(vanilla, rf"TRADITION_CATEGORIES_MAX\s*=\s*{data.TREE_SLOTS}\b")
         self.assertRegex(vanilla, rf"ASCENSION_PERKS_SLOTS\s*=\s*{data.ASCENSION_PERK_SLOTS}\b")
+
+    def test_ascension_paths_take_a_tree_counted_by_the_mod(self):
+        mine = (MOD_DIR / "common/ascension_perks" / build_mod.ASCENSION_PATHS_FILE).read_text(encoding="utf-8")
+        theirs = (GAME_DIR / "common/ascension_perks" / build_mod.ASCENSION_PATHS_FILE).read_text(encoding="utf-8-sig")
+        self.assertEqual(mine, build_mod.render_ascension_paths(theirs), "up to date with the game")
+        self.assertNotIn("num_tradition_categories", mine)
+        self.assertEqual(mine.count("ap_tree_slot_free = yes"), theirs.count("@max_tradition_trees"))
+        # The game uses its limit nowhere else
+        uses = [path for path in (GAME_DIR / "common").rglob("*.txt")
+                if "@max_tradition_trees" in path.read_text(encoding="utf-8-sig", errors="replace")
+                and "scripted_variables" not in path.parts]
+        self.assertEqual([path.name for path in uses], [build_mod.ASCENSION_PATHS_FILE])
+
+    def test_the_tradition_window_scrolls(self):
+        mine = (MOD_DIR / "interface" / build_mod.TRADITION_WINDOW_FILE).read_text(encoding="utf-8")
+        theirs = (GAME_DIR / "interface" / build_mod.TRADITION_WINDOW_FILE).read_text(encoding="utf-8-sig")
+        self.assertEqual(mine, build_mod.render_tradition_window(theirs), "up to date with the game")
+        # The other one is in the window to pick a tree, which scrolls in the game already, the same way
+        self.assertEqual(mine.count('name = "tradition_category_gridbox"'), 2)
+        scroll = mine[mine.index('name = "ap_tradition_category_scroll"'):]
+        grid = scroll[:scroll.index("format")]
+        self.assertIn('verticalScrollbar = "right_vertical_slider"', grid)
+        self.assertIn('name = "tradition_category_gridbox"', grid, "inside the area that scrolls")
+        rows = -(-build_mod.trees_max() // build_mod.TILES_IN_A_ROW)
+        self.assertIn(f"height = {rows * build_mod.TILE_HEIGHT}", grid, "room for every tree")
+        self.assertBalanced(mine)
+
+    def assertBalanced(self, text):
+        depth = 0
+        for character in strip_comments(text):
+            depth += {"{": 1, "}": -1}.get(character, 0)
+            self.assertGreaterEqual(depth, 0)
+        self.assertEqual(depth, 0)
 
     def test_tradition_icons_are_sprites(self):
         """The game looks for the sprite GFX_<tradition>."""

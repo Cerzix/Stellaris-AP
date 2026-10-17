@@ -403,9 +403,9 @@ def describe(node: Node, state: TrackerState, counts: dict, names: dict[str, str
         got = node.item in state.received
         return parts + [(f"A tradition of {node.group}\n\n", "dim"), ("The tradition itself: ", "dim"),
                         ("received\n" if got else "not received yet\n", "received" if got else "text"),
-                        ("\nIt arrives as an item, and works in game once all seven trees are adopted, whichever "
-                         "they are: before that its tree would take the place of one of them. It is listed here "
-                         "until then, and after.\n", "dim")]
+                        ("\nIt arrives as an item and works from then on, whichever trees you adopt. The game "
+                         "shows its tree in the tradition window too, among yours, without taking one of your "
+                         "seven places.\n", "dim")]
     technology = node.technology
     if node.location is not None:
         # The box is called after what it holds: say where in the tree that is

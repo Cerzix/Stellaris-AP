@@ -14,7 +14,7 @@ tradition_synchronicity = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_synchronicity_adopt ap_tree_slot_free = yes }
 		is_gestalt = yes
 	}
 
@@ -45,7 +45,7 @@ tradition_ap_real_synchronicity = {
 	}
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_synchronicity_adopt ap_tree_slot_free = yes }
 		is_gestalt = yes
 	}
 

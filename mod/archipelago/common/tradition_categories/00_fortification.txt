@@ -14,7 +14,7 @@ tradition_unyielding = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_unyielding_adopt ap_tree_slot_free = yes }
 		is_nomadic = no
 		OR = {
 			host_has_dlc = "Apocalypse"
@@ -77,7 +77,7 @@ tradition_ap_real_unyielding = {
 	}
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_unyielding_adopt ap_tree_slot_free = yes }
 		is_nomadic = no
 		OR = {
 			host_has_dlc = "Apocalypse"

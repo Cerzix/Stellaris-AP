@@ -44,6 +44,13 @@ NOT_AI = "NOT = { has_country_flag = ap_ai }"
 VANILLA_TRADITIONS = "ap_vanilla_traditions"
 NOT_VANILLA = f"NOT = {{ has_country_flag = {VANILLA_TRADITIONS} }}"
 REAL_TREES = f"OR = {{ has_country_flag = ap_ai has_country_flag = {VANILLA_TRADITIONS} }}"
+# Whether an empire can adopt one more tree, see render_triggers. Used in place of the game's own limit
+SLOT_FREE = "ap_tree_slot_free = yes"
+ASCENSION_PATHS_FILE = "00_ascension_paths.txt"
+TRADITION_WINDOW_FILE = "topbar_traditions_view.gui"
+# The tiles of the tradition window: as wide as in the game, a little closer together, three in a row
+TILE_WIDTH, TILE_HEIGHT = 310, 266
+TILES_IN_A_ROW = 3
 # Appended to the weight modifiers of a technology, so that it comes last and nothing is added afterwards
 HIDE = f"modifier = {{ factor = 0 {NOT_AI} }}"
 
@@ -244,17 +251,25 @@ def with_potential(block: str, trigger: str) -> str:
     return block[:-1] + f"\tpotential = {{ {trigger} }}\n}}"
 
 
+def adoption(tree: dict) -> str:
+    """The key of the tradition that adopting a tree gives."""
+    return next(tradition["key"] for tradition in tree["traditions"] if tradition["role"] == "adopt")
+
+
 def render_tradition_category(text: str, tree: dict) -> str:
-    """A tradition tree file of the game: the tree with locations for the player, and the real one for the AI."""
+    """A tradition tree file of the game: the tree with locations for the player, and the real one for the AI.
+    Either can be adopted while the empire has a place for one more tree, see render_triggers."""
     opened, closed = next((opened, closed) for key, opened, closed in pdx.block_spans(text) if key == tree["key"])
     block = text[opened:closed + 1]
     checks = block
     for tradition in tree["traditions"]:
         checks = re.sub(rf'"{tradition["key"]}"', f'"{check_tradition(tradition["key"])}"', checks)
+    mine = f"{NOT_AI} {NOT_VANILLA} OR = {{ has_tradition = {check_tradition(adoption(tree))} {SLOT_FREE} }}"
+    real = f"{REAL_TREES} OR = {{ has_tradition = {adoption(tree)} {SLOT_FREE} }}"
     return (f"{HEADER}\n# For the player: the tree of the game, with a location in place of every tradition\n"
-            f"{tree['key']} = {with_potential(checks, f'{NOT_AI} {NOT_VANILLA}')}\n"
+            f"{tree['key']} = {with_potential(checks, mine)}\n"
             f"\n# For the AI countries, and for a player whose traditions are not shuffled: the tree of the game\n"
-            f"{real_tree(tree['key'])} = {with_potential(block, REAL_TREES)}\n")
+            f"{real_tree(tree['key'])} = {with_potential(block, real)}\n")
 
 
 def render_tradition_categories(game_dir) -> dict[str, str]:
@@ -262,6 +277,79 @@ def render_tradition_categories(game_dir) -> dict[str, str]:
     folder = game_dir / "common" / "tradition_categories"
     return {tree["file"]: render_tradition_category((folder / tree["file"]).read_text(encoding="utf-8-sig"), tree)
             for tree in data.tradition_trees() if tree["kind"] == "normal"}
+
+
+def trees_max() -> int:
+    """How many trees the game lets an empire have: its seven, and the tree of every tradition it can receive."""
+    return data.TREE_SLOTS + len(data.normal_trees())
+
+
+def render_defines() -> str:
+    """The game counts the tree of every tradition an empire owns as one of its trees, also one that was received
+    and not adopted, and lets it adopt no more once there are TRADITION_CATEGORIES_MAX. That is raised so far that
+    received traditions can not use the places up, and the seven trees an empire adopts are counted by the mod."""
+    return f"{HEADER}NGameplay = {{\n\tTRADITION_CATEGORIES_MAX = {trees_max()}\n}}\n"
+
+
+def render_triggers(trees: list[dict]) -> str:
+    """ap_tree_slot_free: whether an empire has adopted fewer than seven trees, counted by the traditions that
+    adopting one gives: the trees of the player, of the AI, and of the ascension paths, which count as well."""
+    adopted = []
+    for tree in trees:
+        if tree["kind"] == "normal":
+            adopted.append(check_tradition(adoption(tree)))
+        adopted.append(adoption(tree))
+    lines = "".join(f"\t\t\thas_tradition = {key}\n" for key in adopted)
+    return (f"{HEADER}\n# Whether the empire can adopt one more tradition tree, in place of the limit of the game: "
+            f"see\n# render_defines in build_mod.py\n# Scope: country\nap_tree_slot_free = {{\n\tNOT = {{\n"
+            f"\t\tcalc_true_if = {{\n\t\t\tamount >= {data.TREE_SLOTS}\n{lines}\t\t}}\n\t}}\n}}\n")
+
+
+def render_ascension_paths(text: str) -> str:
+    """The ascension paths of the game, which take a place for their tree: counted by the mod, see render_defines."""
+    limit = "num_tradition_categories < @max_tradition_trees"
+    assert limit in text, "the game changed how an ascension path takes a tree"
+    return HEADER + text.replace(limit, SLOT_FREE)
+
+
+TRADITION_GRID = """\t\t\tgridBoxType = {
+\t\t\t\tname = "tradition_category_gridbox"
+\t\t\t\tposition = { x = @entries_column1 y = @entries_row1_y }
+\t\t\t\tsize = { width = 1250 height = 525 }
+\t\t\t\tslotSize = { width = 314 height = 266 }
+\t\t\t\tmax_slots_horizontal = 4
+\t\t\t\tformat = "UPPER_LEFT"
+\t\t\t}
+"""
+ASCENSION_PERKS_PLACE = "position = { x = 953 y = @entries_row2_y }"
+
+
+def render_tradition_window(text: str) -> str:
+    """The tradition window of the game, with room for more trees than fit at once: the tiles are in an area that
+    scrolls, three in a row, and the ascension perks move up to the right of it."""
+    assert text.count(TRADITION_GRID) == 1 and text.count(ASCENSION_PERKS_PLACE) == 1, \
+        "the game changed its tradition window"
+    width = TILE_WIDTH * TILES_IN_A_ROW
+    rows = -(-trees_max() // TILES_IN_A_ROW)
+    scrolling = (
+        "\t\t\t# Archipelago: received traditions bring their trees along, more than fit at once\n"
+        "\t\t\tcontainerWindowType = {\n"
+        "\t\t\t\tname = \"ap_tradition_category_scroll\"\n"
+        "\t\t\t\tposition = { x = @entries_column1 y = @entries_row1_y }\n"
+        f"\t\t\t\tsize = {{ width = {width + 16} height = 525 }}\n"
+        "\t\t\t\tverticalScrollbar = \"right_vertical_slider\"\n"
+        "\t\t\t\tbackground = {\n\t\t\t\t\tname = \"ap_scroll_bg\"\n\t\t\t\t\tquadTextureSprite = \"GFX_invisible\"\n\t\t\t\t}\n\n"
+        "\t\t\t\tgridBoxType = {\n"
+        "\t\t\t\t\tname = \"tradition_category_gridbox\"\n"
+        "\t\t\t\t\tposition = { x = 0 y = 0 }\n"
+        f"\t\t\t\t\tsize = {{ width = {width} height = {rows * TILE_HEIGHT} }}\n"
+        f"\t\t\t\t\tslotSize = {{ width = {TILE_WIDTH} height = {TILE_HEIGHT} }}\n"
+        f"\t\t\t\t\tmax_slots_horizontal = {TILES_IN_A_ROW}\n"
+        "\t\t\t\t\tformat = \"UPPER_LEFT\"\n"
+        "\t\t\t\t}\n"
+        "\t\t\t}\n")
+    text = text.replace(TRADITION_GRID, scrolling)
+    return HEADER + text.replace(ASCENSION_PERKS_PLACE, f"position = {{ x = {11 + width + 16} y = @entries_row1_y }}")
 
 
 def render_tradition_sprites(trees: list[dict]) -> str:
@@ -306,22 +394,11 @@ def render_tree_effects(trees: list[dict]) -> str:
             f"ap_report_picks = {{\n{picks}%s}}\n")
 
 
-def render_received_traditions(trees: list[dict]) -> str:
-    """A tradition that arrives as an item. The game counts the tree it belongs to as one of the seven an empire
-    can have, as soon as one of its traditions is owned: received early, the trees of a few traditions would
-    leave no place for the trees of the locations. So it is only added once all seven trees are adopted, and
-    kept until then (ap_got_<key>). The trees of received traditions then fill no place a tree could take."""
-    held = "".join(f"\t\tif = {{ limit = {{ has_country_flag = ap_got_{tradition['key']} "
-                   f"NOT = {{ has_tradition = {tradition['key']} }} }} add_tradition = {tradition['key']} }}\n"
-                   for tree in trees if tree["kind"] == "normal"
-                   for tradition in tree["traditions"] if "id" in tradition)
+def render_received_traditions() -> str:
+    """A tradition that arrives as an item. The game counts its tree as one of the trees of the empire and shows
+    it in the tradition window, where there is room for it: see render_defines and render_tradition_window."""
     return ("\n# A tradition received as an item\n# Scope: country\n"
-            "ap_add_tradition = {\n\tset_country_flag = ap_got_$KEY$\n"
-            "\tset_country_flag = ap_traditions_waiting\n\tap_release_traditions = yes\n}\n"
-            "\n# Adds the received traditions that wait, once all seven trees are adopted. Every day, see ap.3\n"
-            "# Scope: country\nap_release_traditions = {\n\tif = {\n"
-            f"\t\tlimit = {{ has_country_flag = ap_traditions_waiting num_tradition_categories >= {data.TREE_SLOTS} }}\n"
-            f"\t\tremove_country_flag = ap_traditions_waiting\n{held}\t}}\n}}\n")
+            "ap_add_tradition = {\n\tadd_tradition = $KEY$\n}\n")
 
 
 def render_effects(locations: list[dict], items: list[dict]) -> str:
@@ -352,7 +429,7 @@ def render_effects(locations: list[dict], items: list[dict]) -> str:
             f"\n# Reports the check that was just researched\n# Scope: country\n"
             f"ap_report_last_check = {{\n{report_last}}}\n"
             + render_tree_effects(data.tradition_trees()) % perks
-            + render_received_traditions(data.tradition_trees())
+            + render_received_traditions()
             + f"\n# Grants the item whose id is in ap_last_item\n# Scope: country\nap_grant_item = {{\n{grant}}}\n")
 
 
@@ -537,6 +614,12 @@ def build(game_dir) -> None:
     for name, text in render_tradition_categories(game_dir).items():
         write(category_dir / name, text)
     write(MOD_DIR / "interface" / "ap_traditions.gfx", render_tradition_sprites(data.tradition_trees()))
+    write(MOD_DIR / "interface" / TRADITION_WINDOW_FILE,
+          render_tradition_window((game_dir / "interface" / TRADITION_WINDOW_FILE).read_text(encoding="utf-8-sig")))
+    write(MOD_DIR / "common" / "defines" / "ap_defines.txt", render_defines())
+    write(MOD_DIR / "common" / "scripted_triggers" / "ap_triggers.txt", render_triggers(data.tradition_trees()))
+    write(MOD_DIR / "common" / "ascension_perks" / ASCENSION_PATHS_FILE, render_ascension_paths(
+        (game_dir / "common" / "ascension_perks" / ASCENSION_PATHS_FILE).read_text(encoding="utf-8-sig")))
     write(MOD_DIR / "common" / "on_actions" / RANDOM_EVENTS_FILE, render_random_events(game_dir))
     write(MOD_DIR / "common" / "scripted_effects" / "ap_generated_effects.txt",
           render_effects(locations, data.items()))

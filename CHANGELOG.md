@@ -10,10 +10,12 @@ From the first full test in the game.
   brings up on a colony that is a few years old, or in an empire every few years. Which one comes up
   is up to the game, and it brings its own message. In a new game of a run they are played again one
   after the other over the first years, each with its own message, instead of all at once.
-- A tradition received as an item takes effect once all seven trees are adopted, and is kept until
-  then. The game counts the tree of every tradition an empire owns as one of its seven, so received
+- The game counts the tree of every tradition an empire owns as one of its seven, so received
   traditions took the places of the trees that hold the locations, which could then not be adopted.
-  The traditions you have received are listed in the tracker, under "Archipelago Traditions".
+  The game now allows as many trees as there can be, and the mod keeps the adopted ones at seven
+  (for the computer empires and the ascension paths too). The tradition window scrolls, three trees
+  in a row, with the ascension perks beside it. The traditions you have received are also listed in
+  the tracker, under "Archipelago Traditions".
 - A death from the multiworld takes the ruler if no other leader is left.
 
 ### Added

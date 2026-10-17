@@ -14,7 +14,7 @@ tradition_diplomacy = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_diplomacy_adopt ap_tree_slot_free = yes }
 		NOR = {
 			has_valid_civic = civic_inwards_perfection
 			has_valid_civic = civic_hive_devouring_swarm
@@ -72,7 +72,7 @@ tradition_ap_real_diplomacy = {
 	}
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_diplomacy_adopt ap_tree_slot_free = yes }
 		NOR = {
 			has_valid_civic = civic_inwards_perfection
 			has_valid_civic = civic_hive_devouring_swarm

@@ -26,7 +26,7 @@ tradition_statecraft = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_statecraft_adopt ap_tree_slot_free = yes }
 		has_paragon_dlc = yes
 	}
 
@@ -69,7 +69,7 @@ tradition_ap_real_statecraft = {
 	}
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_statecraft_adopt ap_tree_slot_free = yes }
 		has_paragon_dlc = yes
 	}
 

@@ -41,7 +41,7 @@ tradition_prosperity = {
 			has_ap_pending = yes
 		}
 	}
-	potential = { NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } }
+	potential = { NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_prosperity_adopt ap_tree_slot_free = yes } }
 }
 
 # For the AI countries, and for a player whose traditions are not shuffled: the tree of the game
@@ -85,5 +85,5 @@ tradition_ap_real_prosperity = {
 			has_ap_pending = yes
 		}
 	}
-	potential = { OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } }
+	potential = { OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_prosperity_adopt ap_tree_slot_free = yes } }
 }

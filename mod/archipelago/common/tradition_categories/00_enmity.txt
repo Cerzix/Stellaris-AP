@@ -22,7 +22,7 @@ tradition_enmity = {
 	}
 
 	potential = {
-		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions }
+		NOT = { has_country_flag = ap_ai } NOT = { has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_ap_enmity_adopt ap_tree_slot_free = yes }
 		NOR = {
 			is_homicidal = yes
 			has_valid_civic = civic_machine_assimilator
@@ -123,7 +123,7 @@ tradition_ap_real_enmity = {
 	}
 
 	potential = {
-		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions }
+		OR = { has_country_flag = ap_ai has_country_flag = ap_vanilla_traditions } OR = { has_tradition = tr_enmity_adopt ap_tree_slot_free = yes }
 		NOR = {
 			is_homicidal = yes
 			has_valid_civic = civic_machine_assimilator

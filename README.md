@@ -66,10 +66,11 @@ its installer) and the zip of a [release](../../releases).
   tooltip that says what it sends. The 49 locations are told apart by the order in which the
   trees were adopted and the place of the tradition in its tree, so they can all be reached
   whichever trees the player picks. The real traditions arrive as items (not the adoption and
-  finish bonuses). They take effect once all seven trees are adopted, whichever they are: the game
-  counts the tree of every tradition an empire owns as one of its seven, so before that they would
-  take the place of a tree. The tracker lists them. The
-  trees of the ascension paths keep their traditions, and count as one of the 7 trees.
+  finish bonuses) and work from then on, whichever trees are adopted. The game counts the tree of
+  every tradition an empire owns as one of its trees and shows it, so the mod lets an empire have as
+  many as there can be (`common/defines`), keeps the adopted ones at seven itself
+  (`ap_tree_slot_free`), and the tradition window scrolls. The tracker lists them too. The trees of
+  the ascension paths keep their traditions, and count as one of the 7 trees.
 - A Random Event brings up one of the random events of the game itself, from the lists the game
   draws from on its own (`mod/archipelago/common/on_actions/ap_random_events.txt`).
 - Ascension perk slots only come from the item "Progressive Ascension". Picking a perk is a location.
@@ -117,5 +118,6 @@ its installer) and the zip of a [release](../../releases).
 
 [MIT](LICENSE), for what was written for this project. Stellaris and its technologies, traditions and
 names belong to Paradox Interactive. As mods do, the mod changes some of the game's own script files
-(in `mod/archipelago/common/technology` and `tradition_categories`), and `data/` is read from the
+(in `mod/archipelago/common/technology`, `tradition_categories` and `ascension_perks`, and the
+tradition window in `mod/archipelago/interface/topbar_traditions_view.gui`), and `data/` is read from the
 game; those stay Paradox's and are not covered by the license.
