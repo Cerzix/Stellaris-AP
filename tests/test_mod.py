@@ -599,10 +599,19 @@ class ScriptTest(unittest.TestCase):
             self.assertLess(keys.index("set_country_flag"), keys.index("random_owned_leader"))
             self.assertLess(keys.index("random_owned_leader"), keys.index("remove_country_flag"))
 
-    def test_a_received_tradition_is_added(self):
+    def test_a_received_tradition_waits_until_seven_trees_are_adopted(self):
         effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
-        self.assertEqual(effects["ap_add_tradition"], [("add_tradition", "=", "$KEY$")])
+        self.assertEqual(effects["ap_add_tradition"], [("set_country_flag", "=", "ap_got_$KEY$"),
+                                                       ("set_country_flag", "=", "ap_traditions_waiting"),
+                                                       ("ap_release_traditions", "=", "yes")])
+        release = pdx.get(effects["ap_release_traditions"], "if")
+        self.assertEqual(pdx.get(release, "limit"), [("has_country_flag", "=", "ap_traditions_waiting"),
+                                                     ("num_tradition_categories", ">=", str(data.TREE_SLOTS))])
+        added = [pdx.get(block, "add_tradition") for key, _, block in release if key == "if"]
+        received = [item["effect"].split("KEY = ")[1].split()[0] for item in data.items() if item["kind"] == "tradition"]
+        self.assertEqual(sorted(added), sorted(received))
         self.assertNotIn("remove_tradition_tree", mod_script("common/scripted_effects"))
+        self.assertIn("ap_release_traditions = yes", mod_script("events"))
         names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
         tree = data.normal_trees()[0]
         self.assertIn(f' {build_mod.real_tree(tree["key"])}:0 "${tree["key"]}$"', names)

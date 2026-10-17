@@ -306,12 +306,22 @@ def render_tree_effects(trees: list[dict]) -> str:
             f"ap_report_picks = {{\n{picks}%s}}\n")
 
 
-def render_received_traditions() -> str:
-    """A tradition that arrives as an item. The game shows its tree in a free place of the tradition window,
-    as a tree that was not adopted: nothing a mod can take it out of. Once all seven trees are adopted there is
-    no free place left for it."""
+def render_received_traditions(trees: list[dict]) -> str:
+    """A tradition that arrives as an item. The game counts the tree it belongs to as one of the seven an empire
+    can have, as soon as one of its traditions is owned: received early, the trees of a few traditions would
+    leave no place for the trees of the locations. So it is only added once all seven trees are adopted, and
+    kept until then (ap_got_<key>). The trees of received traditions then fill no place a tree could take."""
+    held = "".join(f"\t\tif = {{ limit = {{ has_country_flag = ap_got_{tradition['key']} "
+                   f"NOT = {{ has_tradition = {tradition['key']} }} }} add_tradition = {tradition['key']} }}\n"
+                   for tree in trees if tree["kind"] == "normal"
+                   for tradition in tree["traditions"] if "id" in tradition)
     return ("\n# A tradition received as an item\n# Scope: country\n"
-            "ap_add_tradition = {\n\tadd_tradition = $KEY$\n}\n")
+            "ap_add_tradition = {\n\tset_country_flag = ap_got_$KEY$\n"
+            "\tset_country_flag = ap_traditions_waiting\n\tap_release_traditions = yes\n}\n"
+            "\n# Adds the received traditions that wait, once all seven trees are adopted. Every day, see ap.3\n"
+            "# Scope: country\nap_release_traditions = {\n\tif = {\n"
+            f"\t\tlimit = {{ has_country_flag = ap_traditions_waiting num_tradition_categories >= {data.TREE_SLOTS} }}\n"
+            f"\t\tremove_country_flag = ap_traditions_waiting\n{held}\t}}\n}}\n")
 
 
 def render_effects(locations: list[dict], items: list[dict]) -> str:
@@ -342,7 +352,7 @@ def render_effects(locations: list[dict], items: list[dict]) -> str:
             f"\n# Reports the check that was just researched\n# Scope: country\n"
             f"ap_report_last_check = {{\n{report_last}}}\n"
             + render_tree_effects(data.tradition_trees()) % perks
-            + render_received_traditions()
+            + render_received_traditions(data.tradition_trees())
             + f"\n# Grants the item whose id is in ap_last_item\n# Scope: country\nap_grant_item = {{\n{grant}}}\n")
 
 

@@ -66,7 +66,9 @@ its installer) and the zip of a [release](../../releases).
   tooltip that says what it sends. The 49 locations are told apart by the order in which the
   trees were adopted and the place of the tradition in its tree, so they can all be reached
   whichever trees the player picks. The real traditions arrive as items (not the adoption and
-  finish bonuses) and work from then on, whichever trees are adopted; the tracker lists them. The
+  finish bonuses). They take effect once all seven trees are adopted, whichever they are: the game
+  counts the tree of every tradition an empire owns as one of its seven, so before that they would
+  take the place of a tree. The tracker lists them. The
   trees of the ascension paths keep their traditions, and count as one of the 7 trees.
 - A Random Event brings up one of the random events of the game itself, from the lists the game
   draws from on its own (`mod/archipelago/common/on_actions/ap_random_events.txt`).

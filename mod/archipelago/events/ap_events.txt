@@ -90,6 +90,7 @@ country_event = {
 
 	immediate = {
 		ap_poll_mailbox = yes
+		ap_release_traditions = yes
 		country_event = { id = ap.3 days = 1 }
 	}
 }
