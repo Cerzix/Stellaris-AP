@@ -32,10 +32,6 @@ DEATHS = {1: "ruler", 2: "leader", 3: "battle", 4: "colony", 5: "colony"}
 # What the mod reports as "AP_GOAL <number>": what was achieved in the galaxy, as in the option goal
 GOALS = {1: "crisis", 2: "crisis_and_fallen_empires"}
 
-# What the mod reports as "AP_NOTE <number>": something it found out about the game, for the log
-NOTES = {1: "Stellaris: received traditions are kept out of the tradition window",
-         2: "Stellaris: this version of the game keeps the tree of a received tradition in the tradition window"}
-
 RETRIGGER_SECONDS = 5
 MAX_TRIGGER_ATTEMPTS = 5
 FOREGROUND_SETTLE_SECONDS = 2
@@ -184,6 +180,10 @@ class Bridge:
         effect = self.pick(["leader", "fleet"]) if self.death_effect == "random" else self.death_effect
         if self.deaths_per_doom:
             self.say(f"DeathLink: death {self.deaths} of {self.deaths_per_doom}")
+        # Which one it is, so that a death that took nothing to see can be told apart
+        self.say({"leader": "DeathLink: it takes a leader, or the ruler if there is no other",
+                  "fleet": "DeathLink: it takes a military fleet, if there is one",
+                  "none": "DeathLink: it takes nothing"}[effect])
         if self.mailbox:
             self.mailbox.request_death_notice(self.deaths, self.deaths_per_doom, effect)
 
@@ -242,8 +242,6 @@ class Bridge:
             elif word == "DEATH" and number in DEATHS and self.on_death and not self.backlog:
                 # A name the game could not fill in stays in its brackets
                 self.on_death(number, "" if "[" in text else text)
-            elif word == "NOTE" and number in NOTES and not self.backlog:
-                self.say(NOTES[number])
             elif word == "CMD" and number is not None and self.on_command and not self.backlog:
                 self.on_command(number)
         if self.backlog and self.in_game:

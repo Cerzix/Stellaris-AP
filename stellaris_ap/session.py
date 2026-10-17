@@ -267,6 +267,8 @@ class ServerSession(Session):
         self.connection.scout(list(self.locations))
 
     def on_hints(self, points: int, cost: int) -> None:
+        if self.hints is not None and self.hints[0] != points:
+            self.log("hint", f"Hint points: {points}" + (f" (a hint costs {cost})" if cost else ""))
         self.hints = (points, cost)
 
     def resync(self) -> None:

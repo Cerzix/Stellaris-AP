@@ -10,10 +10,9 @@ From the first full test in the game.
   brings up on a colony that is a few years old, or in an empire every few years. Which one comes up
   is up to the game, and it brings its own message. In a new game of a run they are played again one
   after the other over the first years, each with its own message, instead of all at once.
-- A tradition received as an item no longer leaves its tree in the tradition window, where it took
-  the place of a tree to adopt. The traditions you have received are listed in the tracker, under
-  "Archipelago Traditions". Whether the game lets a tree be taken away like this is not tested yet:
-  the client's log says which it was, the first time a tradition arrives.
+- The traditions you have received are listed in the tracker, under "Archipelago Traditions". The
+  game itself still shows their tree in a free place of the tradition window until all seven trees
+  are adopted: it can not be taken out again, the game takes the traditions along with it.
 - A death from the multiworld takes the ruler if no other leader is left.
 
 ### Added
@@ -31,7 +30,8 @@ From the first full test in the game.
   DeathLink and Doom. `deaths_per_doom` is a number from 0 (never) to 50; the names it had before
   still work in a YAML.
 - `/status` and the line under the connection show your hint points and what a hint costs, as the
-  server counts them.
+  server counts them. The log says when they change.
+- The log says what a death from the multiworld takes: a leader, a fleet or nothing.
 
 ### Fixed
 

@@ -3831,788 +3831,7 @@ ap_report_picks = {
 # A tradition received as an item
 # Scope: country
 ap_add_tradition = {
-	set_country_flag = ap_got_$KEY$
 	add_tradition = $KEY$
-}
-
-# Scope: country
-ap_hide_tree_adaptability = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_adaptability
-		if = {
-			limit = { has_country_flag = ap_got_tr_adaptability_recycling NOT = { has_tradition = tr_adaptability_recycling } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_adaptability_recycling
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_adaptability_survival_fittest NOT = { has_tradition = tr_adaptability_survival_fittest } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_adaptability_survival_fittest
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_adaptability_environmental_diversification NOT = { has_tradition = tr_adaptability_environmental_diversification } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_adaptability_environmental_diversification
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_adaptability_adaptive_ecology NOT = { has_tradition = tr_adaptability_adaptive_ecology } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_adaptability_adaptive_ecology
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_adaptability_appropriation NOT = { has_tradition = tr_adaptability_appropriation } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_adaptability_appropriation
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_aptitude = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_aptitude
-		if = {
-			limit = { has_country_flag = ap_got_tr_aptitude_the_empire_needs_you NOT = { has_tradition = tr_aptitude_the_empire_needs_you } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_aptitude_the_empire_needs_you
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_aptitude_specialist_training NOT = { has_tradition = tr_aptitude_specialist_training } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_aptitude_specialist_training
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_aptitude_psychological_profiling NOT = { has_tradition = tr_aptitude_psychological_profiling } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_aptitude_psychological_profiling
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_aptitude_healthcare_program NOT = { has_tradition = tr_aptitude_healthcare_program } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_aptitude_healthcare_program
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_aptitude_champions_of_the_empire NOT = { has_tradition = tr_aptitude_champions_of_the_empire } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_aptitude_champions_of_the_empire
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_archivism = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_archivism
-		if = {
-			limit = { has_country_flag = ap_got_tr_archivism_xeno_paleontology NOT = { has_tradition = tr_archivism_xeno_paleontology } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_archivism_xeno_paleontology
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_archivism_frontier_archaeology NOT = { has_tradition = tr_archivism_frontier_archaeology } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_archivism_frontier_archaeology
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_archivism_expert_negociation NOT = { has_tradition = tr_archivism_expert_negociation } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_archivism_expert_negociation
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_archivism_flawless_display NOT = { has_tradition = tr_archivism_flawless_display } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_archivism_flawless_display
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_archivism_exhibition_specialization NOT = { has_tradition = tr_archivism_exhibition_specialization } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_archivism_exhibition_specialization
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_diplomacy = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_diplomacy
-		if = {
-			limit = { has_country_flag = ap_got_tr_diplomacy_the_federation NOT = { has_tradition = tr_diplomacy_the_federation } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_diplomacy_the_federation
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_diplomacy_entente_coordination NOT = { has_tradition = tr_diplomacy_entente_coordination } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_diplomacy_entente_coordination
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_diplomacy_diplomatic_networking NOT = { has_tradition = tr_diplomacy_diplomatic_networking } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_diplomacy_diplomatic_networking
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_diplomacy_direct_diplomacy NOT = { has_tradition = tr_diplomacy_direct_diplomacy } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_diplomacy_direct_diplomacy
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_diplomacy_eminent_diplomats NOT = { has_tradition = tr_diplomacy_eminent_diplomats } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_diplomacy_eminent_diplomats
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_discovery = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_discovery
-		if = {
-			limit = { has_country_flag = ap_got_tr_discovery_to_boldly_go NOT = { has_tradition = tr_discovery_to_boldly_go } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_discovery_to_boldly_go
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_discovery_databank_uplinks NOT = { has_tradition = tr_discovery_databank_uplinks } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_discovery_databank_uplinks
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_discovery_science_division NOT = { has_tradition = tr_discovery_science_division } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_discovery_science_division
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_discovery_polytechnic_education NOT = { has_tradition = tr_discovery_polytechnic_education } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_discovery_polytechnic_education
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_discovery_faith_in_science NOT = { has_tradition = tr_discovery_faith_in_science } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_discovery_faith_in_science
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_domestication = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_domestication
-		if = {
-			limit = { has_country_flag = ap_got_tr_domestication_containment_protocols NOT = { has_tradition = tr_domestication_containment_protocols } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domestication_containment_protocols
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domestication_bio_repurposing NOT = { has_tradition = tr_domestication_bio_repurposing } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domestication_bio_repurposing
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domestication_astrozoology NOT = { has_tradition = tr_domestication_astrozoology } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domestication_astrozoology
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domestication_metabolic_regulation NOT = { has_tradition = tr_domestication_metabolic_regulation } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domestication_metabolic_regulation
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domestication_killer_instinct NOT = { has_tradition = tr_domestication_killer_instinct } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domestication_killer_instinct
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_domination = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_domination
-		if = {
-			limit = { has_country_flag = ap_got_tr_domination_colonial_viceroys NOT = { has_tradition = tr_domination_colonial_viceroys } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domination_colonial_viceroys
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domination_imperious_architecture NOT = { has_tradition = tr_domination_imperious_architecture } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domination_imperious_architecture
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domination_judgment_corps NOT = { has_tradition = tr_domination_judgment_corps } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domination_judgment_corps
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domination_grand_council NOT = { has_tradition = tr_domination_grand_council } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domination_grand_council
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_domination_workplace_motivators NOT = { has_tradition = tr_domination_workplace_motivators } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_domination_workplace_motivators
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_enmity = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_enmity
-		if = {
-			limit = { has_country_flag = ap_got_tr_enmity_rise_to_the_occasion NOT = { has_tradition = tr_enmity_rise_to_the_occasion } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_enmity_rise_to_the_occasion
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_enmity_consumate_contrarian NOT = { has_tradition = tr_enmity_consumate_contrarian } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_enmity_consumate_contrarian
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_enmity_match NOT = { has_tradition = tr_enmity_match } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_enmity_match
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_enmity_outpace NOT = { has_tradition = tr_enmity_outpace } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_enmity_outpace
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_enmity_eclipse NOT = { has_tradition = tr_enmity_eclipse } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_enmity_eclipse
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_expansion = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_expansion
-		if = {
-			limit = { has_country_flag = ap_got_tr_expansion_reach_for_the_stars NOT = { has_tradition = tr_expansion_reach_for_the_stars } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_expansion_reach_for_the_stars
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_expansion_colonization_fever NOT = { has_tradition = tr_expansion_colonization_fever } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_expansion_colonization_fever
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_expansion_courier_network NOT = { has_tradition = tr_expansion_courier_network } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_expansion_courier_network
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_expansion_galactic_ambition NOT = { has_tradition = tr_expansion_galactic_ambition } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_expansion_galactic_ambition
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_expansion_a_new_life NOT = { has_tradition = tr_expansion_a_new_life } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_expansion_a_new_life
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_harmony = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_harmony
-		if = {
-			limit = { has_country_flag = ap_got_tr_harmony_mind_and_body NOT = { has_tradition = tr_harmony_mind_and_body } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_harmony_mind_and_body
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_harmony_kinship NOT = { has_tradition = tr_harmony_kinship } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_harmony_kinship
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_harmony_the_greater_good NOT = { has_tradition = tr_harmony_the_greater_good } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_harmony_the_greater_good
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_harmony_harmonious_directives NOT = { has_tradition = tr_harmony_harmonious_directives } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_harmony_harmonious_directives
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_harmony_utopian_dream NOT = { has_tradition = tr_harmony_utopian_dream } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_harmony_utopian_dream
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_logistics = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_logistics
-		if = {
-			limit = { has_country_flag = ap_got_tr_logistics_1 NOT = { has_tradition = tr_logistics_1 } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_logistics_1
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_logistics_2 NOT = { has_tradition = tr_logistics_2 } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_logistics_2
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_logistics_3 NOT = { has_tradition = tr_logistics_3 } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_logistics_3
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_logistics_4 NOT = { has_tradition = tr_logistics_4 } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_logistics_4
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_logistics_5 NOT = { has_tradition = tr_logistics_5 } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_logistics_5
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_mercantile = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_mercantile
-		if = {
-			limit = { has_country_flag = ap_got_tr_mercantile_trickle_up_economics NOT = { has_tradition = tr_mercantile_trickle_up_economics } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_mercantile_trickle_up_economics
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_mercantile_commercial_enterprise NOT = { has_tradition = tr_mercantile_commercial_enterprise } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_mercantile_commercial_enterprise
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_mercantile_adaptive_economic_policies NOT = { has_tradition = tr_mercantile_adaptive_economic_policies } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_mercantile_adaptive_economic_policies
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_mercantile_marketplace_of_better_ideas NOT = { has_tradition = tr_mercantile_marketplace_of_better_ideas } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_mercantile_marketplace_of_better_ideas
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_mercantile_insider_trading NOT = { has_tradition = tr_mercantile_insider_trading } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_mercantile_insider_trading
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_politics = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_politics
-		if = {
-			limit = { has_country_flag = ap_got_tr_politics_quid_pro_quo NOT = { has_tradition = tr_politics_quid_pro_quo } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_politics_quid_pro_quo
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_politics_gravitas NOT = { has_tradition = tr_politics_gravitas } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_politics_gravitas
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_politics_national_agenda NOT = { has_tradition = tr_politics_national_agenda } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_politics_national_agenda
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_politics_persistent_petitioners NOT = { has_tradition = tr_politics_persistent_petitioners } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_politics_persistent_petitioners
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_politics_extraordinary_powers NOT = { has_tradition = tr_politics_extraordinary_powers } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_politics_extraordinary_powers
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_prosperity = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_prosperity
-		if = {
-			limit = { has_country_flag = ap_got_tr_prosperity_administrative_operations NOT = { has_tradition = tr_prosperity_administrative_operations } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_prosperity_administrative_operations
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_prosperity_sct NOT = { has_tradition = tr_prosperity_sct } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_prosperity_sct
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_prosperity_pursuit_of_profit NOT = { has_tradition = tr_prosperity_pursuit_of_profit } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_prosperity_pursuit_of_profit
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_prosperity_interstellar_franchising NOT = { has_tradition = tr_prosperity_interstellar_franchising } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_prosperity_interstellar_franchising
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_prosperity_public_works NOT = { has_tradition = tr_prosperity_public_works } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_prosperity_public_works
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_statecraft = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_statecraft
-		if = {
-			limit = { has_country_flag = ap_got_tr_statecraft_constitutional_focus NOT = { has_tradition = tr_statecraft_constitutional_focus } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_statecraft_constitutional_focus
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_statecraft_inspiring_agendas NOT = { has_tradition = tr_statecraft_inspiring_agendas } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_statecraft_inspiring_agendas
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_statecraft_immutable_directives NOT = { has_tradition = tr_statecraft_immutable_directives } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_statecraft_immutable_directives
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_statecraft_amongst_peers NOT = { has_tradition = tr_statecraft_amongst_peers } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_statecraft_amongst_peers
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_statecraft_shared_benefits NOT = { has_tradition = tr_statecraft_shared_benefits } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_statecraft_shared_benefits
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_subterfuge = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_subterfuge
-		if = {
-			limit = { has_country_flag = ap_got_tr_subterfuge_information_security NOT = { has_tradition = tr_subterfuge_information_security } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_subterfuge_information_security
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_subterfuge_operational_security NOT = { has_tradition = tr_subterfuge_operational_security } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_subterfuge_operational_security
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_subterfuge_nda NOT = { has_tradition = tr_subterfuge_nda } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_subterfuge_nda
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_subterfuge_double_agents NOT = { has_tradition = tr_subterfuge_double_agents } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_subterfuge_double_agents
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_subterfuge_shadow_recruits NOT = { has_tradition = tr_subterfuge_shadow_recruits } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_subterfuge_shadow_recruits
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_supremacy = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_supremacy
-		if = {
-			limit = { has_country_flag = ap_got_tr_supremacy_master_shipwrights NOT = { has_tradition = tr_supremacy_master_shipwrights } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_supremacy_master_shipwrights
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_supremacy_fleet_logistical_corps NOT = { has_tradition = tr_supremacy_fleet_logistical_corps } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_supremacy_fleet_logistical_corps
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_supremacy_overwhelming_force NOT = { has_tradition = tr_supremacy_overwhelming_force } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_supremacy_overwhelming_force
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_supremacy_war_games NOT = { has_tradition = tr_supremacy_war_games } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_supremacy_war_games
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_supremacy_great_game NOT = { has_tradition = tr_supremacy_great_game } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_supremacy_great_game
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_synchronicity = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_synchronicity
-		if = {
-			limit = { has_country_flag = ap_got_tr_synchronicity_cloned_organs NOT = { has_tradition = tr_synchronicity_cloned_organs } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_synchronicity_cloned_organs
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_synchronicity_kinship_gestalt NOT = { has_tradition = tr_synchronicity_kinship_gestalt } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_synchronicity_kinship_gestalt
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_synchronicity_integrated_preservation NOT = { has_tradition = tr_synchronicity_integrated_preservation } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_synchronicity_integrated_preservation
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_synchronicity_harmonious_directives NOT = { has_tradition = tr_synchronicity_harmonious_directives } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_synchronicity_harmonious_directives
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_synchronicity_collective_reasoning NOT = { has_tradition = tr_synchronicity_collective_reasoning } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_synchronicity_collective_reasoning
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_unyielding = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_unyielding
-		if = {
-			limit = { has_country_flag = ap_got_tr_unyielding_resistance_is_frugal NOT = { has_tradition = tr_unyielding_resistance_is_frugal } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_unyielding_resistance_is_frugal
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_unyielding_never_surrender NOT = { has_tradition = tr_unyielding_never_surrender } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_unyielding_never_surrender
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_unyielding_bulwark_of_harmony NOT = { has_tradition = tr_unyielding_bulwark_of_harmony } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_unyielding_bulwark_of_harmony
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_unyielding_defensive_zeal NOT = { has_tradition = tr_unyielding_defensive_zeal } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_unyielding_defensive_zeal
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_unyielding_fortress_doctrine NOT = { has_tradition = tr_unyielding_fortress_doctrine } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_unyielding_fortress_doctrine
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
-}
-
-# Scope: country
-ap_hide_tree_versatility = {
-	if = {
-		limit = { NOT = { has_country_flag = ap_trees_stay } }
-		remove_tradition_tree = tradition_ap_real_versatility
-		if = {
-			limit = { has_country_flag = ap_got_tr_versatility_universal_compatibility NOT = { has_tradition = tr_versatility_universal_compatibility } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_versatility_universal_compatibility
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_versatility_adaptive_programming NOT = { has_tradition = tr_versatility_adaptive_programming } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_versatility_adaptive_programming
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_versatility_spatial_optimization NOT = { has_tradition = tr_versatility_spatial_optimization } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_versatility_spatial_optimization
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_versatility_material_analysis NOT = { has_tradition = tr_versatility_material_analysis } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_versatility_material_analysis
-		}
-		if = {
-			limit = { has_country_flag = ap_got_tr_versatility_operational_proxies NOT = { has_tradition = tr_versatility_operational_proxies } }
-			set_country_flag = ap_trees_stay
-			add_tradition = tr_versatility_operational_proxies
-		}
-		if = {
-			limit = { NOT = { has_country_flag = ap_tree_note } }
-			set_country_flag = ap_tree_note
-			if = { limit = { has_country_flag = ap_trees_stay } log = "AP_NOTE 2" }
-			else = { log = "AP_NOTE 1" }
-		}
-	}
 }
 
 # Grants the item whose id is in ap_last_item
@@ -5206,106 +4425,106 @@ ap_grant_item = {
 	if = { limit = { check_variable = { which = ap_last_item value = 586 } } give_technology = { tech = tech_xeno_tourism_agency message = yes } }
 	if = { limit = { check_variable = { which = ap_last_item value = 587 } } give_technology = { tech = tech_zero_point_power message = yes } }
 	if = { limit = { check_variable = { which = ap_last_item value = 588 } } give_technology = { tech = tech_zro_launcher message = yes } }
-	if = { limit = { check_variable = { which = ap_last_item value = 1101 } } ap_add_tradition = { KEY = tr_adaptability_recycling } ap_hide_tree_adaptability = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1102 } } ap_add_tradition = { KEY = tr_adaptability_survival_fittest } ap_hide_tree_adaptability = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1103 } } ap_add_tradition = { KEY = tr_adaptability_environmental_diversification } ap_hide_tree_adaptability = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1104 } } ap_add_tradition = { KEY = tr_adaptability_adaptive_ecology } ap_hide_tree_adaptability = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1105 } } ap_add_tradition = { KEY = tr_adaptability_appropriation } ap_hide_tree_adaptability = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1106 } } ap_add_tradition = { KEY = tr_aptitude_the_empire_needs_you } ap_hide_tree_aptitude = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1107 } } ap_add_tradition = { KEY = tr_aptitude_specialist_training } ap_hide_tree_aptitude = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1108 } } ap_add_tradition = { KEY = tr_aptitude_psychological_profiling } ap_hide_tree_aptitude = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1109 } } ap_add_tradition = { KEY = tr_aptitude_healthcare_program } ap_hide_tree_aptitude = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1110 } } ap_add_tradition = { KEY = tr_aptitude_champions_of_the_empire } ap_hide_tree_aptitude = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1111 } } ap_add_tradition = { KEY = tr_archivism_xeno_paleontology } ap_hide_tree_archivism = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1112 } } ap_add_tradition = { KEY = tr_archivism_frontier_archaeology } ap_hide_tree_archivism = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1113 } } ap_add_tradition = { KEY = tr_archivism_expert_negociation } ap_hide_tree_archivism = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1114 } } ap_add_tradition = { KEY = tr_archivism_flawless_display } ap_hide_tree_archivism = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1115 } } ap_add_tradition = { KEY = tr_archivism_exhibition_specialization } ap_hide_tree_archivism = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1116 } } ap_add_tradition = { KEY = tr_diplomacy_the_federation } ap_hide_tree_diplomacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1117 } } ap_add_tradition = { KEY = tr_diplomacy_entente_coordination } ap_hide_tree_diplomacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1118 } } ap_add_tradition = { KEY = tr_diplomacy_diplomatic_networking } ap_hide_tree_diplomacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1119 } } ap_add_tradition = { KEY = tr_diplomacy_direct_diplomacy } ap_hide_tree_diplomacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1120 } } ap_add_tradition = { KEY = tr_diplomacy_eminent_diplomats } ap_hide_tree_diplomacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1121 } } ap_add_tradition = { KEY = tr_discovery_to_boldly_go } ap_hide_tree_discovery = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1122 } } ap_add_tradition = { KEY = tr_discovery_databank_uplinks } ap_hide_tree_discovery = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1123 } } ap_add_tradition = { KEY = tr_discovery_science_division } ap_hide_tree_discovery = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1124 } } ap_add_tradition = { KEY = tr_discovery_polytechnic_education } ap_hide_tree_discovery = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1125 } } ap_add_tradition = { KEY = tr_discovery_faith_in_science } ap_hide_tree_discovery = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1126 } } ap_add_tradition = { KEY = tr_domestication_containment_protocols } ap_hide_tree_domestication = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1127 } } ap_add_tradition = { KEY = tr_domestication_bio_repurposing } ap_hide_tree_domestication = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1128 } } ap_add_tradition = { KEY = tr_domestication_astrozoology } ap_hide_tree_domestication = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1129 } } ap_add_tradition = { KEY = tr_domestication_metabolic_regulation } ap_hide_tree_domestication = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1130 } } ap_add_tradition = { KEY = tr_domestication_killer_instinct } ap_hide_tree_domestication = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1131 } } ap_add_tradition = { KEY = tr_domination_colonial_viceroys } ap_hide_tree_domination = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1132 } } ap_add_tradition = { KEY = tr_domination_imperious_architecture } ap_hide_tree_domination = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1133 } } ap_add_tradition = { KEY = tr_domination_judgment_corps } ap_hide_tree_domination = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1134 } } ap_add_tradition = { KEY = tr_domination_grand_council } ap_hide_tree_domination = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1135 } } ap_add_tradition = { KEY = tr_domination_workplace_motivators } ap_hide_tree_domination = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1136 } } ap_add_tradition = { KEY = tr_enmity_rise_to_the_occasion } ap_hide_tree_enmity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1137 } } ap_add_tradition = { KEY = tr_enmity_consumate_contrarian } ap_hide_tree_enmity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1138 } } ap_add_tradition = { KEY = tr_enmity_match } ap_hide_tree_enmity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1139 } } ap_add_tradition = { KEY = tr_enmity_outpace } ap_hide_tree_enmity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1140 } } ap_add_tradition = { KEY = tr_enmity_eclipse } ap_hide_tree_enmity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1141 } } ap_add_tradition = { KEY = tr_expansion_reach_for_the_stars } ap_hide_tree_expansion = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1142 } } ap_add_tradition = { KEY = tr_expansion_colonization_fever } ap_hide_tree_expansion = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1143 } } ap_add_tradition = { KEY = tr_expansion_courier_network } ap_hide_tree_expansion = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1144 } } ap_add_tradition = { KEY = tr_expansion_galactic_ambition } ap_hide_tree_expansion = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1145 } } ap_add_tradition = { KEY = tr_expansion_a_new_life } ap_hide_tree_expansion = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1146 } } ap_add_tradition = { KEY = tr_harmony_mind_and_body } ap_hide_tree_harmony = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1147 } } ap_add_tradition = { KEY = tr_harmony_kinship } ap_hide_tree_harmony = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1148 } } ap_add_tradition = { KEY = tr_harmony_the_greater_good } ap_hide_tree_harmony = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1149 } } ap_add_tradition = { KEY = tr_harmony_harmonious_directives } ap_hide_tree_harmony = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1150 } } ap_add_tradition = { KEY = tr_harmony_utopian_dream } ap_hide_tree_harmony = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1151 } } ap_add_tradition = { KEY = tr_logistics_1 } ap_hide_tree_logistics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1152 } } ap_add_tradition = { KEY = tr_logistics_2 } ap_hide_tree_logistics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1153 } } ap_add_tradition = { KEY = tr_logistics_3 } ap_hide_tree_logistics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1154 } } ap_add_tradition = { KEY = tr_logistics_4 } ap_hide_tree_logistics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1155 } } ap_add_tradition = { KEY = tr_logistics_5 } ap_hide_tree_logistics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1156 } } ap_add_tradition = { KEY = tr_mercantile_trickle_up_economics } ap_hide_tree_mercantile = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1157 } } ap_add_tradition = { KEY = tr_mercantile_commercial_enterprise } ap_hide_tree_mercantile = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1158 } } ap_add_tradition = { KEY = tr_mercantile_adaptive_economic_policies } ap_hide_tree_mercantile = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1159 } } ap_add_tradition = { KEY = tr_mercantile_marketplace_of_better_ideas } ap_hide_tree_mercantile = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1160 } } ap_add_tradition = { KEY = tr_mercantile_insider_trading } ap_hide_tree_mercantile = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1161 } } ap_add_tradition = { KEY = tr_politics_quid_pro_quo } ap_hide_tree_politics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1162 } } ap_add_tradition = { KEY = tr_politics_gravitas } ap_hide_tree_politics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1163 } } ap_add_tradition = { KEY = tr_politics_national_agenda } ap_hide_tree_politics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1164 } } ap_add_tradition = { KEY = tr_politics_persistent_petitioners } ap_hide_tree_politics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1165 } } ap_add_tradition = { KEY = tr_politics_extraordinary_powers } ap_hide_tree_politics = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1166 } } ap_add_tradition = { KEY = tr_prosperity_administrative_operations } ap_hide_tree_prosperity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1167 } } ap_add_tradition = { KEY = tr_prosperity_sct } ap_hide_tree_prosperity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1168 } } ap_add_tradition = { KEY = tr_prosperity_pursuit_of_profit } ap_hide_tree_prosperity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1169 } } ap_add_tradition = { KEY = tr_prosperity_interstellar_franchising } ap_hide_tree_prosperity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1170 } } ap_add_tradition = { KEY = tr_prosperity_public_works } ap_hide_tree_prosperity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1171 } } ap_add_tradition = { KEY = tr_statecraft_constitutional_focus } ap_hide_tree_statecraft = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1172 } } ap_add_tradition = { KEY = tr_statecraft_inspiring_agendas } ap_hide_tree_statecraft = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1173 } } ap_add_tradition = { KEY = tr_statecraft_immutable_directives } ap_hide_tree_statecraft = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1174 } } ap_add_tradition = { KEY = tr_statecraft_amongst_peers } ap_hide_tree_statecraft = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1175 } } ap_add_tradition = { KEY = tr_statecraft_shared_benefits } ap_hide_tree_statecraft = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1176 } } ap_add_tradition = { KEY = tr_subterfuge_information_security } ap_hide_tree_subterfuge = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1177 } } ap_add_tradition = { KEY = tr_subterfuge_operational_security } ap_hide_tree_subterfuge = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1178 } } ap_add_tradition = { KEY = tr_subterfuge_nda } ap_hide_tree_subterfuge = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1179 } } ap_add_tradition = { KEY = tr_subterfuge_double_agents } ap_hide_tree_subterfuge = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1180 } } ap_add_tradition = { KEY = tr_subterfuge_shadow_recruits } ap_hide_tree_subterfuge = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1181 } } ap_add_tradition = { KEY = tr_supremacy_master_shipwrights } ap_hide_tree_supremacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1182 } } ap_add_tradition = { KEY = tr_supremacy_fleet_logistical_corps } ap_hide_tree_supremacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1183 } } ap_add_tradition = { KEY = tr_supremacy_overwhelming_force } ap_hide_tree_supremacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1184 } } ap_add_tradition = { KEY = tr_supremacy_war_games } ap_hide_tree_supremacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1185 } } ap_add_tradition = { KEY = tr_supremacy_great_game } ap_hide_tree_supremacy = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1186 } } ap_add_tradition = { KEY = tr_synchronicity_cloned_organs } ap_hide_tree_synchronicity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1187 } } ap_add_tradition = { KEY = tr_synchronicity_kinship_gestalt } ap_hide_tree_synchronicity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1188 } } ap_add_tradition = { KEY = tr_synchronicity_integrated_preservation } ap_hide_tree_synchronicity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1189 } } ap_add_tradition = { KEY = tr_synchronicity_harmonious_directives } ap_hide_tree_synchronicity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1190 } } ap_add_tradition = { KEY = tr_synchronicity_collective_reasoning } ap_hide_tree_synchronicity = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1191 } } ap_add_tradition = { KEY = tr_unyielding_resistance_is_frugal } ap_hide_tree_unyielding = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1192 } } ap_add_tradition = { KEY = tr_unyielding_never_surrender } ap_hide_tree_unyielding = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1193 } } ap_add_tradition = { KEY = tr_unyielding_bulwark_of_harmony } ap_hide_tree_unyielding = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1194 } } ap_add_tradition = { KEY = tr_unyielding_defensive_zeal } ap_hide_tree_unyielding = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1195 } } ap_add_tradition = { KEY = tr_unyielding_fortress_doctrine } ap_hide_tree_unyielding = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1196 } } ap_add_tradition = { KEY = tr_versatility_universal_compatibility } ap_hide_tree_versatility = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1197 } } ap_add_tradition = { KEY = tr_versatility_adaptive_programming } ap_hide_tree_versatility = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1198 } } ap_add_tradition = { KEY = tr_versatility_spatial_optimization } ap_hide_tree_versatility = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1199 } } ap_add_tradition = { KEY = tr_versatility_material_analysis } ap_hide_tree_versatility = yes }
-	if = { limit = { check_variable = { which = ap_last_item value = 1200 } } ap_add_tradition = { KEY = tr_versatility_operational_proxies } ap_hide_tree_versatility = yes }
+	if = { limit = { check_variable = { which = ap_last_item value = 1101 } } ap_add_tradition = { KEY = tr_adaptability_recycling } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1102 } } ap_add_tradition = { KEY = tr_adaptability_survival_fittest } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1103 } } ap_add_tradition = { KEY = tr_adaptability_environmental_diversification } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1104 } } ap_add_tradition = { KEY = tr_adaptability_adaptive_ecology } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1105 } } ap_add_tradition = { KEY = tr_adaptability_appropriation } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1106 } } ap_add_tradition = { KEY = tr_aptitude_the_empire_needs_you } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1107 } } ap_add_tradition = { KEY = tr_aptitude_specialist_training } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1108 } } ap_add_tradition = { KEY = tr_aptitude_psychological_profiling } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1109 } } ap_add_tradition = { KEY = tr_aptitude_healthcare_program } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1110 } } ap_add_tradition = { KEY = tr_aptitude_champions_of_the_empire } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1111 } } ap_add_tradition = { KEY = tr_archivism_xeno_paleontology } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1112 } } ap_add_tradition = { KEY = tr_archivism_frontier_archaeology } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1113 } } ap_add_tradition = { KEY = tr_archivism_expert_negociation } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1114 } } ap_add_tradition = { KEY = tr_archivism_flawless_display } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1115 } } ap_add_tradition = { KEY = tr_archivism_exhibition_specialization } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1116 } } ap_add_tradition = { KEY = tr_diplomacy_the_federation } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1117 } } ap_add_tradition = { KEY = tr_diplomacy_entente_coordination } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1118 } } ap_add_tradition = { KEY = tr_diplomacy_diplomatic_networking } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1119 } } ap_add_tradition = { KEY = tr_diplomacy_direct_diplomacy } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1120 } } ap_add_tradition = { KEY = tr_diplomacy_eminent_diplomats } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1121 } } ap_add_tradition = { KEY = tr_discovery_to_boldly_go } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1122 } } ap_add_tradition = { KEY = tr_discovery_databank_uplinks } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1123 } } ap_add_tradition = { KEY = tr_discovery_science_division } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1124 } } ap_add_tradition = { KEY = tr_discovery_polytechnic_education } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1125 } } ap_add_tradition = { KEY = tr_discovery_faith_in_science } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1126 } } ap_add_tradition = { KEY = tr_domestication_containment_protocols } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1127 } } ap_add_tradition = { KEY = tr_domestication_bio_repurposing } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1128 } } ap_add_tradition = { KEY = tr_domestication_astrozoology } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1129 } } ap_add_tradition = { KEY = tr_domestication_metabolic_regulation } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1130 } } ap_add_tradition = { KEY = tr_domestication_killer_instinct } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1131 } } ap_add_tradition = { KEY = tr_domination_colonial_viceroys } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1132 } } ap_add_tradition = { KEY = tr_domination_imperious_architecture } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1133 } } ap_add_tradition = { KEY = tr_domination_judgment_corps } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1134 } } ap_add_tradition = { KEY = tr_domination_grand_council } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1135 } } ap_add_tradition = { KEY = tr_domination_workplace_motivators } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1136 } } ap_add_tradition = { KEY = tr_enmity_rise_to_the_occasion } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1137 } } ap_add_tradition = { KEY = tr_enmity_consumate_contrarian } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1138 } } ap_add_tradition = { KEY = tr_enmity_match } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1139 } } ap_add_tradition = { KEY = tr_enmity_outpace } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1140 } } ap_add_tradition = { KEY = tr_enmity_eclipse } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1141 } } ap_add_tradition = { KEY = tr_expansion_reach_for_the_stars } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1142 } } ap_add_tradition = { KEY = tr_expansion_colonization_fever } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1143 } } ap_add_tradition = { KEY = tr_expansion_courier_network } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1144 } } ap_add_tradition = { KEY = tr_expansion_galactic_ambition } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1145 } } ap_add_tradition = { KEY = tr_expansion_a_new_life } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1146 } } ap_add_tradition = { KEY = tr_harmony_mind_and_body } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1147 } } ap_add_tradition = { KEY = tr_harmony_kinship } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1148 } } ap_add_tradition = { KEY = tr_harmony_the_greater_good } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1149 } } ap_add_tradition = { KEY = tr_harmony_harmonious_directives } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1150 } } ap_add_tradition = { KEY = tr_harmony_utopian_dream } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1151 } } ap_add_tradition = { KEY = tr_logistics_1 } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1152 } } ap_add_tradition = { KEY = tr_logistics_2 } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1153 } } ap_add_tradition = { KEY = tr_logistics_3 } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1154 } } ap_add_tradition = { KEY = tr_logistics_4 } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1155 } } ap_add_tradition = { KEY = tr_logistics_5 } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1156 } } ap_add_tradition = { KEY = tr_mercantile_trickle_up_economics } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1157 } } ap_add_tradition = { KEY = tr_mercantile_commercial_enterprise } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1158 } } ap_add_tradition = { KEY = tr_mercantile_adaptive_economic_policies } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1159 } } ap_add_tradition = { KEY = tr_mercantile_marketplace_of_better_ideas } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1160 } } ap_add_tradition = { KEY = tr_mercantile_insider_trading } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1161 } } ap_add_tradition = { KEY = tr_politics_quid_pro_quo } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1162 } } ap_add_tradition = { KEY = tr_politics_gravitas } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1163 } } ap_add_tradition = { KEY = tr_politics_national_agenda } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1164 } } ap_add_tradition = { KEY = tr_politics_persistent_petitioners } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1165 } } ap_add_tradition = { KEY = tr_politics_extraordinary_powers } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1166 } } ap_add_tradition = { KEY = tr_prosperity_administrative_operations } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1167 } } ap_add_tradition = { KEY = tr_prosperity_sct } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1168 } } ap_add_tradition = { KEY = tr_prosperity_pursuit_of_profit } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1169 } } ap_add_tradition = { KEY = tr_prosperity_interstellar_franchising } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1170 } } ap_add_tradition = { KEY = tr_prosperity_public_works } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1171 } } ap_add_tradition = { KEY = tr_statecraft_constitutional_focus } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1172 } } ap_add_tradition = { KEY = tr_statecraft_inspiring_agendas } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1173 } } ap_add_tradition = { KEY = tr_statecraft_immutable_directives } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1174 } } ap_add_tradition = { KEY = tr_statecraft_amongst_peers } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1175 } } ap_add_tradition = { KEY = tr_statecraft_shared_benefits } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1176 } } ap_add_tradition = { KEY = tr_subterfuge_information_security } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1177 } } ap_add_tradition = { KEY = tr_subterfuge_operational_security } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1178 } } ap_add_tradition = { KEY = tr_subterfuge_nda } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1179 } } ap_add_tradition = { KEY = tr_subterfuge_double_agents } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1180 } } ap_add_tradition = { KEY = tr_subterfuge_shadow_recruits } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1181 } } ap_add_tradition = { KEY = tr_supremacy_master_shipwrights } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1182 } } ap_add_tradition = { KEY = tr_supremacy_fleet_logistical_corps } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1183 } } ap_add_tradition = { KEY = tr_supremacy_overwhelming_force } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1184 } } ap_add_tradition = { KEY = tr_supremacy_war_games } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1185 } } ap_add_tradition = { KEY = tr_supremacy_great_game } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1186 } } ap_add_tradition = { KEY = tr_synchronicity_cloned_organs } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1187 } } ap_add_tradition = { KEY = tr_synchronicity_kinship_gestalt } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1188 } } ap_add_tradition = { KEY = tr_synchronicity_integrated_preservation } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1189 } } ap_add_tradition = { KEY = tr_synchronicity_harmonious_directives } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1190 } } ap_add_tradition = { KEY = tr_synchronicity_collective_reasoning } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1191 } } ap_add_tradition = { KEY = tr_unyielding_resistance_is_frugal } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1192 } } ap_add_tradition = { KEY = tr_unyielding_never_surrender } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1193 } } ap_add_tradition = { KEY = tr_unyielding_bulwark_of_harmony } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1194 } } ap_add_tradition = { KEY = tr_unyielding_defensive_zeal } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1195 } } ap_add_tradition = { KEY = tr_unyielding_fortress_doctrine } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1196 } } ap_add_tradition = { KEY = tr_versatility_universal_compatibility } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1197 } } ap_add_tradition = { KEY = tr_versatility_adaptive_programming } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1198 } } ap_add_tradition = { KEY = tr_versatility_spatial_optimization } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1199 } } ap_add_tradition = { KEY = tr_versatility_material_analysis } }
+	if = { limit = { check_variable = { which = ap_last_item value = 1200 } } ap_add_tradition = { KEY = tr_versatility_operational_proxies } }
 	if = { limit = { check_variable = { which = ap_last_item value = 10001 } } add_resource = { minerals = 1000 } }
 	if = { limit = { check_variable = { which = ap_last_item value = 10002 } } add_resource = { energy = 1000 } }
 	if = { limit = { check_variable = { which = ap_last_item value = 10003 } } add_resource = { alloys = 300 } }

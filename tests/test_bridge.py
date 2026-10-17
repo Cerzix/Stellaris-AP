@@ -176,12 +176,14 @@ class BridgeTest(unittest.TestCase):
     def test_a_death_takes_a_leader_or_a_fleet(self):
         mailbox = self.death_mailbox()
         picks = iter(["fleet", "leader", "fleet"])
-        bridge = Bridge(self.user_dir, self.checks.append, say=lambda text: None, mailbox=mailbox,
+        said = []
+        bridge = Bridge(self.user_dir, self.checks.append, say=said.append, mailbox=mailbox,
                         deaths_per_doom=0, death_effect="random", pick=lambda choices: next(picks))
         for _ in range(3):
             bridge.receive_death()
         self.assertEqual(mailbox.notices, [(1, 0, "fleet"), (2, 0, "leader"), (3, 0, "fleet")])
         self.assertEqual(mailbox.dooms, [], "without a doom the deaths are only counted")
+        self.assertIn("DeathLink: it takes a leader, or the ruler if there is no other", said, "the log says which")
         quiet = self.death_mailbox()
         Bridge(self.user_dir, self.checks.append, say=lambda text: None, mailbox=quiet,
                death_effect="none").receive_death()
@@ -341,15 +343,6 @@ class BridgeTest(unittest.TestCase):
         bridge.tick()
         self.assertEqual((bridge.in_game, bridge.game_empire, self.checks), (True, "hive", [5]))
         self.assertEqual(said, ["Stellaris: a game is already loaded, a hive empire"])
-
-    def test_what_the_mod_found_out_is_said(self):
-        said = []
-        bridge = Bridge(self.user_dir, self.checks.append, delivery="manual", say=said.append)
-        bridge.tick()
-        self.log("AP_NOTE 1")
-        self.log("AP_NOTE 9")
-        bridge.tick()
-        self.assertEqual([text for text in said if "tradition" in text], [bridge_module.NOTES[1]])
 
     def test_loading_a_save_reapplies_items(self):
         self.bridge.set_items([ENERGY])

@@ -306,34 +306,12 @@ def render_tree_effects(trees: list[dict]) -> str:
             f"ap_report_picks = {{\n{picks}%s}}\n")
 
 
-def hide_tree(tree: dict) -> str:
-    """The name of the effect that takes the tree of the real traditions out of the tradition window again."""
-    return f"ap_hide_tree_{short(tree)}"
-
-
-def render_received_traditions(trees: list[dict]) -> str:
-    """A tradition that arrives as an item belongs to the tree of the real traditions, which the game then
-    shows among the trees of the player, where it takes the place of one they could adopt. The tree is
-    taken away again. If the game takes its traditions along, they are given back and the tree is left
-    alone from then on: ap_trees_stay. "AP_NOTE" tells the client once which of the two it was."""
-    out = ("\n# A tradition received as an item\n# Scope: country\n"
-           "ap_add_tradition = {\n\tset_country_flag = ap_got_$KEY$\n\tadd_tradition = $KEY$\n}\n")
-    for tree in trees:
-        if tree["kind"] != "normal":
-            continue
-        restore = "".join(
-            f"\t\tif = {{\n\t\t\tlimit = {{ has_country_flag = ap_got_{tradition['key']} "
-            f"NOT = {{ has_tradition = {tradition['key']} }} }}\n"
-            f"\t\t\tset_country_flag = ap_trees_stay\n\t\t\tadd_tradition = {tradition['key']}\n\t\t}}\n"
-            for tradition in tree["traditions"] if "id" in tradition)
-        out += (f"\n# Scope: country\n{hide_tree(tree)} = {{\n"
-                f"\tif = {{\n\t\tlimit = {{ NOT = {{ has_country_flag = ap_trees_stay }} }}\n"
-                f"\t\tremove_tradition_tree = {real_tree(tree['key'])}\n{restore}"
-                f"\t\tif = {{\n\t\t\tlimit = {{ NOT = {{ has_country_flag = ap_tree_note }} }}\n"
-                f"\t\t\tset_country_flag = ap_tree_note\n"
-                f"\t\t\tif = {{ limit = {{ has_country_flag = ap_trees_stay }} log = \"AP_NOTE 2\" }}\n"
-                f"\t\t\telse = {{ log = \"AP_NOTE 1\" }}\n\t\t}}\n\t}}\n}}\n")
-    return out
+def render_received_traditions() -> str:
+    """A tradition that arrives as an item. The game shows its tree in a free place of the tradition window,
+    as a tree that was not adopted: nothing a mod can take it out of. Once all seven trees are adopted there is
+    no free place left for it."""
+    return ("\n# A tradition received as an item\n# Scope: country\n"
+            "ap_add_tradition = {\n\tadd_tradition = $KEY$\n}\n")
 
 
 def render_effects(locations: list[dict], items: list[dict]) -> str:
@@ -364,7 +342,7 @@ def render_effects(locations: list[dict], items: list[dict]) -> str:
             f"\n# Reports the check that was just researched\n# Scope: country\n"
             f"ap_report_last_check = {{\n{report_last}}}\n"
             + render_tree_effects(data.tradition_trees()) % perks
-            + render_received_traditions(data.tradition_trees())
+            + render_received_traditions()
             + f"\n# Grants the item whose id is in ap_last_item\n# Scope: country\nap_grant_item = {{\n{grant}}}\n")
 
 

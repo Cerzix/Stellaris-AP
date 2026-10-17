@@ -296,6 +296,9 @@ class ServerSessionTest(unittest.TestCase):
         self.server.on_event("hints", 3, 64)
         self.session.tick()
         self.assertIn("3 hint points (a hint costs 64)", self.session.status())
+        self.server.on_event("hints", 1, 2)
+        self.session.tick()
+        self.assertIn(("hint", "Hint points: 1 (a hint costs 2)"), self.lines, "a change is logged")
         self.session.command("!hint Destroyers")
         self.assertEqual(self.server.said, ["!hint Destroyers"], "the server answers a hint, not the client")
 

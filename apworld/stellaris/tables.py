@@ -56,10 +56,7 @@ def build_items(technologies: list[dict], trees: list[dict], other: list[dict]) 
         for tradition in tree["traditions"]:
             if "id" in tradition:
                 items.append({"id": tradition["id"], "name": tradition["name"], "kind": "tradition", "count": 1,
-                              # The second effect takes the tree of the tradition out of the tradition window
-                              # again, where the game puts it. Both are effects of the mod
-                              "effect": f"ap_add_tradition = {{ KEY = {tradition['key']} }} "
-                                        f"ap_hide_tree_{tree['key'].removeprefix('tradition_')} = yes",
+                              "effect": f"ap_add_tradition = {{ KEY = {tradition['key']} }}",
                               "dlc": tree["dlc"], "empires": tree["empires"], "tier": None, "weight": 1})
     for item in other:
         items.append({"kind": "other", "count": 1, "dlc": [], "empires": list(EMPIRES), "tier": None, "weight": 1,

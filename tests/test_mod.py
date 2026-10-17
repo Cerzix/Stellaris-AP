@@ -107,8 +107,7 @@ class DataTest(unittest.TestCase):
                 self.assertEqual("id" in tradition, tree["kind"] == "normal" and tradition["role"] == "tradition")
                 if "id" in tradition:
                     self.assertEqual(items[tradition["id"]]["effect"],
-                                     f"ap_add_tradition = {{ KEY = {tradition['key']} }} "
-                                     f"ap_hide_tree_{tree['key'].removeprefix('tradition_')} = yes")
+                                     f"ap_add_tradition = {{ KEY = {tradition['key']} }}")
         self.assertEqual(sum(item["kind"] == "tradition" for item in data.items()), 100)
 
     def test_dlcs_and_empires(self):
@@ -600,21 +599,10 @@ class ScriptTest(unittest.TestCase):
             self.assertLess(keys.index("set_country_flag"), keys.index("random_owned_leader"))
             self.assertLess(keys.index("random_owned_leader"), keys.index("remove_country_flag"))
 
-    def test_a_received_tradition_does_not_keep_a_tree(self):
+    def test_a_received_tradition_is_added(self):
         effects = dict((key, value) for key, _, value in pdx.parse(strip_comments(mod_script("common/scripted_effects"))))
-        self.assertEqual(effects["ap_add_tradition"], [("set_country_flag", "=", "ap_got_$KEY$"),
-                                                       ("add_tradition", "=", "$KEY$")])
-        grant = strip_comments(mod_script("common/scripted_effects"))
-        for tree in data.normal_trees():
-            hide = pdx.get(effects[build_mod.hide_tree(tree)], "if")
-            self.assertEqual(pdx.get(hide, "limit"), [("NOT", "=", [("has_country_flag", "=", "ap_trees_stay")])])
-            self.assertEqual(pdx.get(hide, "remove_tradition_tree"), build_mod.real_tree(tree["key"]))
-            # If the game takes the traditions along with the tree, every one that was received comes back
-            restored = [pdx.get(block, "add_tradition") for key, _, block in hide if key == "if"]
-            received = [tradition["key"] for tradition in tree["traditions"] if "id" in tradition]
-            self.assertEqual([key for key in restored if key], received)
-            for key in received:
-                self.assertIn(f"ap_add_tradition = {{ KEY = {key} }} {build_mod.hide_tree(tree)} = yes", grant)
+        self.assertEqual(effects["ap_add_tradition"], [("add_tradition", "=", "$KEY$")])
+        self.assertNotIn("remove_tradition_tree", mod_script("common/scripted_effects"))
         names = (MOD_DIR / "localisation/english/ap_l_english.yml").read_text(encoding="utf-8-sig")
         tree = data.normal_trees()[0]
         self.assertIn(f' {build_mod.real_tree(tree["key"])}:0 "${tree["key"]}$"', names)
@@ -632,7 +620,6 @@ class ScriptTest(unittest.TestCase):
                          [("ap_add_ascension_slot", "=", "yes")] * 2)
         key = tradition["effect"].split("KEY = ")[1].split()[0]
         self.assertIn(("ap_add_tradition", "=", [("KEY", "=", key)]), start)
-        self.assertEqual(sum(entry[0].startswith("ap_hide_tree_") for entry in start), 1)
         given = [pdx.get(value, "tech") for key, _, value in start if key == "give_technology"]
         self.assertEqual(given, [technology["effect"].split("tech = ")[1].split()[0], "ap_check_3"],
                          "the technology received, and the one of the location that is done")
